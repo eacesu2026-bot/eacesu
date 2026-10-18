@@ -1,0 +1,16 @@
+{
+  "name": "eacesu-web",
+  "version": "1.0.0",
+  "private": true,
+  "description": "اتحاد العاملين المساهمين بشركة مصر للألومنيوم — EACESU",
+  "scripts": {
+    "dev": "vercel dev",
+    "deploy": "vercel --prod"
+  },
+  "dependencies": {
+    "@vercel/blob": "^0.27.0"
+  },
+  "engines": {
+    "node": ">=18"
+  }
+}
