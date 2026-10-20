@@ -1,0 +1,4 @@
+tests
+tools
+*.md
+supabase_*

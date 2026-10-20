@@ -1,63 +1,58 @@
-# EACESU — دليل التنفيذ على GitHub + Vercel
+# EACESU — دليل النشر (النسخة 2 — مؤمَّنة)
 
-## حساب الإدارة
-- الإيميل: eacesu2026@gmail.com
-- كلمة المرور: Prof@015
-- صلاحيات كاملة: إضافة/تعديل/حذف/تصدير/استيراد/طباعة/PDF/تصويت إداري (اطلاع وطباعة فقط)
+## كلمة مرور الإدارة (سرّية)
+- **هي نفسها القديمة** ويستمر العمل بها، لكنها لم تعد مكتوبة في أي ملف، ولا توجد بصمة (hash) لها.
+  تُحفظ «خزنة» مشفّرة داخل `index.html` (PBKDF2-SHA256 × 600,000 + AES-256-GCM)؛ صحة الكلمة = نجاح فك التشفير.
+- بريد الإدارة محفوظ كبصمة فقط ولا يظهر في الصفحة.
+- **تغيير كلمة مرور الإدارة من داخل الموقع:** لوحة التحكم ← «🔐 تغيير كلمة مرور الإدارة» (تتطلب الكلمة الحالية، والجديدة 12 حرفًا+ بـ3 أنواع من الرموز). يُعاد تغليف المفتاح فتبقى كل البيانات المشفّرة سليمة، وتنزّل الصفحة ملفَّي `index.html` و`EACESU_COMPLETE.html` المحدَّثين: **ارفعهما إلى GitHub** لتسري الكلمة الجديدة على كل الأجهزة وتتوقف القديمة (حتى الرفع تبقى القديمة تعمل على الأجهزة الأخرى).
+- **تغيير كلمة مرور أي عضو:** «🔑 بيانات دخول الأعضاء» ← «تغيير كلمة المرور» (8 أحرف+، أو «توليد قوية»)؛ تتوقف القديمة فورًا. وللعضو الجديد تُحدَّد من نموذج العضو.
+- ⚠️ الكلمة القديمة كانت منشورة في الدليل السابق، فمن اطّلع عليه يعرفها. **أوصي بتغييرها** (البيانات المشفّرة تبقى سليمة):
+  ```bash
+  OLD_PASSWORD='القديمة' NEW_PASSWORD='جديدة-قوية-12-حرفًا+' node tools/admin-vault.mjs rotate
+  ```
+  ثم ارفع `index.html` و`EACESU_COMPLETE.html` المعدَّلين.
+- بعد إدخال بريد الإدارة وكلمتها يُفتح تلقائيًا جدول **«🔑 بيانات دخول الأعضاء»**: الاسم، الهاتف (اسم المستخدم)، البريد، الرقم القومي، كلمة المرور (مخفية، 👁 للإظهار، نسخ)، رقم الملف، حالة الربط، وزر «كلمة جديدة». يمكن فتحه لاحقًا من لوحة التحكم.
 
-## الملفات على المستودع (جذر المشروع)
+## ما الذي يحمي البيانات؟
+- بيانات كل عضو (بما فيها كلمة مروره) **مشفّرة في التخزين**؛ لا يفكّها إلا مدير الاتحاد أو العضو نفسه.
+- الشكاوى تُشفَّر لحظة الإرسال بالمفتاح العام للإدارة.
+- المفاتيح والبيانات المفكوكة **في الذاكرة فقط**، وتُمحى عند الخروج أو الخمول 15 دقيقة أو إعادة تحميل الصفحة.
+- النسخة الاحتياطية (تصدير JSON) تحمل بيانات الأعضاء والشكاوى **مشفّرة**.
+- التصويت سرّي: لا يُحفظ اختيارك مرتبطًا بهويتك. حذف العضو لبياناته من صفحته. إشعار خصوصية وموافقة عند التسجيل.
+- ترويسات أمان (CSP صارمة، HSTS، منع التضمين، ...) في `vercel.json`، ولا توجد سكربتات من نطاقات خارجية (المكتبات داخل `lib/`).
+- تأخير متصاعد بعد 5 محاولات دخول خاطئة.
+- **حدود صريحة:** النسخة تخزّن البيانات في متصفح الجهاز (لا خادم). التشفير يحمي من قراءة التخزين، لكنه لا يجعل التصويت/الشكاوى مشتركة بين الأجهزة، ولا يحمي من كلمة مرور ضعيفة (كلمة ضعيفة تُخمَّن دون اتصال). للاستخدام الرسمي اربط Supabase.
+
+## الملفات المرفوعة على GitHub/Vercel
 ```
-/
-├── index.html
-├── sw.js
-├── manifest.json
-└── header-logos.png
+index.html  sw.js  manifest.json  header-logos.png  icon-192.png  icon-512.png
+package.json  vercel.json  .gitignore  .vercelignore  api/upload.js  lib/
 ```
+(`tools/` و`tests/` و`supabase_*` للمطوّر ولا تُنشر.)
 
-## النشر على GitHub ثم Vercel
-
-### 1) GitHub
-1. أنشئ مستودعًا جديدًا (مثلاً eacesu-web) — Public أو Private.
-2. ارفع الملفات الأربعة في الجذر (ليس داخل مجلد فرعي إن أمكن).
-3. Commit + Push.
-
-من الطرفية:
+## النشر
 ```bash
-git init
-git add index.html sw.js manifest.json header-logos.png
-git commit -m "EACESU platform"
-git branch -M main
-git remote add origin https://github.com/USER/REPO.git
-git push -u origin main
+git init && git add . && git commit -m "EACESU" && git branch -M main
+git remote add origin https://github.com/USER/REPO.git && git push -u origin main
 ```
+Vercel → Add New Project → Framework: Other → Deploy. (HTTPS إلزامي: الصفحة تحوّل http إلى https تلقائيًا، وتعرض شريطًا أحمر وتعطّل الدخول إن فُتحت في سياق غير آمن مثل ملف محلي؛ ومعها HSTS من Vercel.)
 
-### 2) Vercel
-1. ادخل vercel.com وسجّل بحساب GitHub.
-2. Add New Project → استورد المستودع.
-3. Framework Preset: Other (أو static).
-4. Root Directory: . (الجذر)
-5. Build Command: اتركه فارغًا
-6. Output Directory: . (أو اترك الافتراضي)
-7. Deploy.
+## رفع الملفات السحابي (Vercel Blob)
+1. Storage → Blob → Create واربطه بالمشروع.
+2. أضف متغير **`ADMIN_UPLOAD_KEY`** (نص عشوائي طويل). بدونه يرفض الخادم كل رفع (401).
+3. أعد النشر. تطلب الواجهة المفتاح من الإدارة عند أول رفع.
 
-بعد النشر ستحصل على: https://xxx.vercel.app
+## Supabase (اختياري للمرحلة التالية)
+1. SQL Editor → نفّذ `supabase_full_schema.sql` وحده (آمن لإعادة التشغيل؛ يتضمن RLS وسجل تدقيق وتحقق الرقم القومي).
+2. مدير: أنشئ مستخدمًا في Authentication ثم اجعل `app_metadata` = `{"role":"admin"}`.
+3. Edge Function: `supabase functions deploy fetch-stock-prices` ثم
+   `supabase secrets set CRON_SECRET=... MARKET_DATA_API_KEY=... MARKET_DATA_BASE_URL=...`
+   (يتطلب ترويسة `x-cron-secret`؛ الوضع التجريبي معطّل ما لم تضبط `ALLOW_DEMO=true` — لا تفعّله في الإنتاج).
 
-### 3) نطاق مخصص (اختياري)
-Vercel → Project → Settings → Domains → أضف نطاق الاتحاد واتبع DNS.
-
-## أكواد Supabase (ليست على Vercel)
-| الملف | المكان |
-|--------|--------|
-| supabase_full_schema.sql | Supabase → SQL Editor → Run |
-| supabase_edge_fetch_prices.ts | Supabase → Edge Functions → Deploy |
-
-## ميزات الإدارة بعد التحديث
-- تصدير JSON / استيراد JSON
-- طباعة الصفحة
-- حفظ PDF
-- حفظ وتحديث الأعضاء مع ظهور فوري في القائمة
-- إصلاح تسجيل الدخول والتسجيل (كان معطلاً بسبب خطأ برمجي)
-
-## ملاحظات
-- يجب HTTPS (Vercel يوفره تلقائيًا) لتثبيت PWA.
-- البيانات تُحفظ في متصفح الإدارة (localStorage) حتى ربط Supabase.
+## اختبارات
+```bash
+python3 -m http.server 8766        # من جذر المشروع
+ADMIN_PASSWORD=... python3 tests/e2e_test.py          # 63 حالة (يحتاج playwright + chromium)
+ADMIN_PASSWORD=... python3 tests/e2e_admin_passwords_test.py   # 29 حالة
+python3 tests/xss_fuzz.py
+```
