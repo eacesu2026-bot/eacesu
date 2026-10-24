@@ -365,11 +365,12 @@ table.stocks td,table.stocks th{padding:14px 16px;font-size:.95rem}
   .news-big{grid-template-columns:1fr}
 }
 
-.main-content>section#brandHeader{text-align:center;padding:28px 0 22px;background:#fff!important;border-bottom:1px solid var(--border)}
-.brand-header img{max-width:min(100%,820px);margin:0 auto 14px;height:auto}
-.brand-header h1{font-size:clamp(1.5rem,3vw,2.3rem);font-weight:700;line-height:1.5;color:var(--primary);position:relative;display:inline-block;padding-bottom:12px}
-.brand-header h1::after{content:'';position:absolute;bottom:0;right:25%;left:25%;height:3px;background:var(--accent);border-radius:2px}
-.brand-header .en{font-size:.88rem;color:var(--muted);margin:8px 0 16px}
+.brand-top{display:flex;align-items:center;justify-content:center;gap:28px;background:#fff;border-bottom:1px solid var(--border);padding:12px 24px;flex-wrap:wrap}
+.brand-top img{height:92px;width:auto;max-width:min(100%,560px);object-fit:contain}
+.bt-name{text-align:center}
+.bt-name h1{font-size:clamp(1.15rem,2.2vw,1.7rem);font-weight:700;line-height:1.5;color:var(--primary)}
+.bt-name .en{font-size:.78rem;color:var(--muted);margin-top:2px}
+@media(max-width:700px){.brand-top{padding:8px 12px;gap:6px}.brand-top img{height:60px}.bt-name .en{display:none}}
 .cdiag{border-radius:8px;padding:10px 14px;margin:8px 0;font-size:.88rem;background:#eef2f7;border-right:4px solid #94a3b8}
 .cdiag.ok{background:#e1f6ec;border-color:#16a34a}.cdiag.warn{background:#fff4dc;border-color:#d97706}.cdiag.bad{background:#fde8ea;border-color:#b91c1c}
 .cdiag ol{margin:6px 22px 0;line-height:1.9}
@@ -383,7 +384,7 @@ table.stocks td,table.stocks th{padding:14px 16px;font-size:.95rem}
 <div style="display:flex;gap:7px;flex-wrap:wrap">
 <button type="button" id="cloudPill" class="cpill" onclick="openCloud()" title="حالة المزامنة السحابية">☁️ …</button>
 <button class="btn btn-sm btn-success" id="btnSave" type="button" onclick="saveAllNow()" title="Ctrl+S">💾 حفظ</button>
-<button class="btn btn-sm btn-outline" id="btnCloud" type="button" onclick="openCloud()" style="border-color:#fff;color:#fff">☁️ سحابة</button>
+<button class="btn btn-sm btn-outline" id="btnCloud" type="button" onclick="openCloud()" style="border-color:#fff;color:#fff">☁️ AppCloud</button>
 <button class="btn btn-sm btn-ghost" type="button" onclick="openAdminHub()">لوحة التحكم</button>
 <button class="btn btn-sm btn-danger" type="button" onclick="logout()">خروج</button>
 </div></div></div></div>
@@ -421,6 +422,8 @@ table.stocks td,table.stocks th{padding:14px 16px;font-size:.95rem}
   </div>
 </aside>
 <div class="main-wrap">
+<header class="brand-top"><img id="brandBanner" src="" alt="شعارات اتحاد العاملين المساهمين بشركة مصر للألومنيوم"/>
+<div class="bt-name"><h1>اتحاد العاملين المساهمين<br>بشركة مصر للألومنيوم</h1><div class="en">Egypt Aluminum Company Employees' Shareholders Union — EACESU</div></div></header>
 <div class="topbar">
   <div class="topbar-right">
     <button class="menu-toggle" type="button" onclick="toggleSidebar()" aria-label="فتح القائمة"><svg class="ico" aria-hidden="true"><use href="#i-menu"/></svg></button>
@@ -440,11 +443,6 @@ table.stocks td,table.stocks th{padding:14px 16px;font-size:.95rem}
 <button class="btn btn-sm btn-gold" type="button" id="btnInstallApp" onclick="installApp()">تثبيت</button>
 <button class="ab-x" type="button" onclick="dismissInstall()" aria-label="إخفاء"><svg class="ico" aria-hidden="true"><use href="#i-x"/></svg></button>
 </div></div></div>
-<section id="brandHeader" class="brand-header"><div class="container">
-<img id="brandBanner" src="" alt="شعارات اتحاد العاملين المساهمين بشركة مصر للألومنيوم"/>
-<h1>اتحاد العاملين المساهمين<br>بشركة مصر للألومنيوم</h1>
-<div class="en">Egypt Aluminum Company Employees' Shareholders Union — EACESU</div>
-</div></section>
 <section id="memberDash" style="display:none;background:linear-gradient(160deg,#072a40,#0b3d5c);color:#fff;padding:36px 0 28px">
 <div class="container">
 <div style="display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:12px;margin-bottom:20px">
@@ -692,9 +690,15 @@ table.stocks td,table.stocks th{padding:14px 16px;font-size:.95rem}
 <div class="modal-actions"><button class="btn btn-outline" type="button" onclick="exportJSON()">⬇️ نسخة احتياطية كاملة</button><button class="btn btn-outline" type="button" onclick="document.getElementById('importFile').click()">⬆️ استعادة نسخة كاملة</button><button class="btn btn-ghost" type="button" onclick="closeM('dsHubModal')">إغلاق</button></div>
 </div></div>
 <style>.ds-bar{display:flex;gap:7px;flex-wrap:wrap;justify-content:center;margin:0 0 14px}.ds-adm{display:none;gap:7px;flex-wrap:wrap}body.admin-mode .ds-adm{display:inline-flex}.ds-cred{display:contents}@media print{.ds-bar{display:none!important}}</style>
-<div class="modal-overlay" id="cloudModal"><div class="modal wide"><h3>☁️ المزامنة السحابية</h3>
+<div class="modal-overlay" id="cloudKeyModal" data-sticky="1"><div class="modal"><h3>🔑 مفتاح السحابة</h3>
+<p style="font-size:.88rem;color:var(--muted);margin-bottom:10px;line-height:1.9">أدخل قيمة <b dir="ltr">ADMIN_UPLOAD_KEY</b> التي ضبطتها على الخادم. تُدخلها مرة واحدة على هذا الجهاز ثم تُحفظ مشفّرة.</p>
+<div class="err" id="ckErr"></div>
+<div class="form-group"><label>المفتاح</label><input type="password" id="ckInput" dir="ltr" autocomplete="off" onkeydown="if(event.key==='Enter'){event.preventDefault();ckSubmit()}"/></div>
+<div class="modal-actions"><button class="btn btn-primary" type="button" onclick="ckSubmit()">حفظ ومزامنة</button><button class="btn btn-ghost" type="button" onclick="ckCancel()">لاحقًا</button></div>
+</div></div>
+<div class="modal-overlay" id="cloudModal"><div class="modal wide"><h3>☁️ AppCloud — المزامنة السحابية</h3>
 <p style="font-size:.84rem;color:var(--muted);margin-bottom:8px">كل تعديل تجريه يُنشر تلقائيًا بعد ثوانٍ ليراه كل الزوار والأعضاء على أي جهاز. الأعضاء والشكاوى والأصوات مشفّرة. <span id="cloudStat"></span></p>
-<div class="modal-actions" style="justify-content:flex-start"><button class="btn btn-success" type="button" onclick="cloudSyncNow()">⬆️ نشر الآن + تحديث الشكاوى والأصوات</button><button class="btn btn-outline" type="button" onclick="cloudPullNow()">⬇️ تحميل بيانات السحابة</button><button class="btn btn-outline" type="button" onclick="cloudBackup()">🗄️ رفع نسخة احتياطية مشفّرة</button></div>
+<div class="modal-actions" style="justify-content:flex-start"><button class="btn btn-ghost" type="button" onclick="changeCloudKey()">🔑 مفتاح السحابة</button><button class="btn btn-success" type="button" onclick="cloudSyncNow()">⬆️ نشر الآن + تحديث الشكاوى والأصوات</button><button class="btn btn-outline" type="button" onclick="cloudPullNow()">⬇️ تحميل بيانات السحابة</button><button class="btn btn-outline" type="button" onclick="cloudBackup()">🗄️ رفع نسخة احتياطية مشفّرة</button></div>
 <div id="cloudDiag" class="cdiag"></div>
 <h4 style="margin:12px 0 6px;font-size:.9rem">النسخ الاحتياطية المشفّرة</h4>
 <div id="cloudList" style="max-height:34vh;overflow:auto"></div>
@@ -926,7 +930,7 @@ function renderAll(){renderOrg();renderNews();renderStocks();renderStats();rende
 function toast(m,d){var t=document.getElementById('toast');t.textContent=m;t.classList.add('show');setTimeout(function(){t.classList.remove('show')},d||3000)}
 function openM(id){document.getElementById(id).classList.add('show');document.body.style.overflow='hidden'}
 function closeM(id){document.getElementById(id).classList.remove('show');document.body.style.overflow=''}
-document.querySelectorAll('.modal-overlay').forEach(function(o){o.addEventListener('click',function(e){if(e.target===o){o.classList.remove('show');document.body.style.overflow=''}})});
+document.querySelectorAll('.modal-overlay').forEach(function(o){o.addEventListener('click',function(e){if(e.target===o&&!o.hasAttribute('data-sticky')){o.classList.remove('show');document.body.style.overflow=''}})});
 
 function renderStats(){fin.members=memberCount()}
 function renderFinance(){
@@ -1502,11 +1506,21 @@ async function getCloudKey(ask){
   var w=localStorage.getItem('e_ck');
   if(w&&adminPriv){try{k=TD.decode(await adminOpenRaw(w));if(k){sessionStorage.setItem('e_upk',k);return k}}catch(e){}}
   if(!ask||!adminPriv)return '';
-  k=prompt('مفتاح السحابة (ADMIN_UPLOAD_KEY من إعدادات Vercel). يُحفظ مشفّرًا على هذا الجهاز ولا يُطلب منك مجددًا:')||'';
-  k=k.trim();
+  k=((await askCloudKey())||'').trim();
   if(k){sessionStorage.setItem('e_upk',k);try{safeSet('e_ck',b64e(await CRY.encrypt({name:'RSA-OAEP'},await getPub(),TE.encode(k))))}catch(e){}}
   return k;
 }
+var _ckRes=null;
+function askCloudKey(){return new Promise(function(res){
+  if(_ckRes){try{_ckRes('')}catch(e){}}
+  _ckRes=res;var i=document.getElementById('ckInput');i.value='';document.getElementById('ckErr').classList.remove('show');openM('cloudKeyModal');setTimeout(function(){try{i.focus()}catch(e){}},60)})}
+function ckSubmit(){var v=document.getElementById('ckInput').value.trim();if(v.length<4){var e=document.getElementById('ckErr');e.textContent='أدخل المفتاح كما هو في إعدادات الخادم (ADMIN_UPLOAD_KEY).';e.classList.add('show');return}
+  closeM('cloudKeyModal');var r=_ckRes;_ckRes=null;if(r)r(v)}
+function ckCancel(){closeM('cloudKeyModal');var r=_ckRes;_ckRes=null;if(r)r('')}
+async function changeCloudKey(){
+  if(!adminPriv)return;sessionStorage.removeItem('e_upk');localStorage.removeItem('e_ck');_noKeyAsk=false;
+  var k=await getCloudKey(true);if(!k){toast('لم يُدخل مفتاح');return}
+  CLOUD.on=null;await cloudSyncNow();cloudDiagnose()}
 async function capi(action,o){
   o=o||{};var h={};
   if(o.admin){var k=await getCloudKey(!!o.ask);if(!k)throw cerr('nokey');h['x-admin-key']=k}
@@ -1518,7 +1532,7 @@ async function capi(action,o){
     if(r.status===401&&o.admin){sessionStorage.removeItem('e_upk');localStorage.removeItem('e_ck');throw cerr('unauthorized')}
     if(r.status===503&&j&&j.error==='not_configured'){CLOUD.notcfg=true;throw cerr('nocloud')}
     if(!j&&(r.status===404||r.status===405||r.ok))throw cerr('nocloud');
-    if(!r.ok){var e=cerr((j&&j.error)||('http'+r.status));e.status=r.status;throw e}
+    if(!r.ok){var e=cerr((j&&j.error)||('http'+r.status));e.status=r.status;if(j&&j.detail)e.detail=j.detail;throw e}
     if(CLOUD.on!==true){CLOUD.on=true}
     return j;
   }catch(e){if(e&&e.name==='AbortError')throw cerr('timeout');throw e}
@@ -1597,7 +1611,7 @@ async function ensureGroupKey(){
 }
 /* ---- النشر ---- */
 async function buildPublic(){
-  var regsList=regulations.map(function(r){var cloud=/^https:/i.test(r.data||'');return {id:r.id,title:r.title,fileName:r.fileName||'',date:r.date||'',url:cloud?r.data:'',local:!cloud}});
+  var regsList=regulations.map(function(r){var cloud=/^(https:|\/api\/cloud\?action=f&p=)/i.test(r.data||'');return {id:r.id,title:r.title,fileName:r.fileName||'',date:r.date||'',url:cloud?r.data:'',local:!cloud}});
   var regsEnc=ADMIN_GK?await aesEncObj(ADMIN_GK,regsList):null;
   return {org:org,news:news,stocks:stocks,fin:{shares:fin.shares,avgCost:fin.avgCost,dividends:fin.dividends},votes:votes,stats:{members:memberEnv.length},regsEnc:regsEnc,rev:Date.now()};
 }
@@ -1616,7 +1630,7 @@ async function cloudPublish(quiet){
     console.warn('publish',e);
     if(isNoCloud(e)){CLOUD.on=false;setPill('off')}
     else if(e.message==='nokey'||e.message==='unauthorized'){_noKeyAsk=true;setPill('key');if(!quiet)toast('مفتاح السحابة غير صحيح أو مفقود',5000)}
-    else{setPill('err',e.message);clearTimeout(_pubT);_pubT=setTimeout(function(){cloudPublish(true)},30000)}
+    else{setPill('err',(e.message||'')+(e.detail?': '+e.detail:''));clearTimeout(_pubT);_pubT=setTimeout(function(){cloudPublish(true)},30000)}
     return false;
   }finally{_pubBusy=false}
 }
@@ -1693,18 +1707,22 @@ function openCloud(){if(!adminPriv){toast('للإدارة فقط');return}update
 async function cloudDiagnose(){
   var box=document.getElementById('cloudDiag');if(!box)return;
   function show(cls,title,steps){box.className='cdiag '+cls;box.innerHTML='<strong>'+title+'</strong>'+(steps&&steps.length?'<ol>'+steps.map(function(x){return '<li>'+x+'</li>'}).join('')+'</ol>':'')}
-  box.className='cdiag';box.textContent='جاري فحص الاتصال بالسحابة…';
-  if(location.protocol==='file:'){show('bad','الصفحة مفتوحة كملف من الجهاز — لا يوجد خادم',['ارفع المجلد كاملًا على Vercel وافتح رابط الموقع (https://…vercel.app).']);return}
+  box.className='cdiag';box.textContent='جاري فحص الاتصال بـ AppCloud…';
+  var HOWTO='شغّل خادم AppCloud (الأسهل): على أي استضافة Node أو Docker نفّذ <code dir="ltr">ADMIN_UPLOAD_KEY=مفتاحك node appcloud/server.mjs</code> — التفاصيل في appcloud/README_APPCLOUD.md. أو انشر المجلد كاملًا على Vercel مع Blob.';
+  if(location.protocol==='file:'){show('bad','الصفحة مفتوحة كملف من الجهاز — لا يوجد خادم',[HOWTO]);return}
   var r,txt='',j=null;
   try{r=await fetch('/api/cloud?action=public',{cache:'no-store'});txt=await r.text();try{j=JSON.parse(txt)}catch(e){}}
   catch(e){show('bad','تعذّر الوصول إلى الخادم',['تحقق من الإنترنت ثم أعد المحاولة.']);return}
-  if(r.status===503&&j&&j.error==='not_configured'){show('bad','الخادم يعمل لكن تخزين Blob غير مفعّل',['في Vercel: Storage ← Create ← Blob ← اربطه بالمشروع (يُضاف BLOB_READ_WRITE_TOKEN تلقائيًا).','Settings ← Environment Variables ← أضف ADMIN_UPLOAD_KEY بقيمة طويلة وصعبة التخمين من اختيارك.','Deployments ← Redeploy ثم أعد فتح هذه النافذة.']);return}
-  if(!j){show('bad','هذا الرابط لا يشغّل ملف الخادم api/cloud.js (الاستجابة '+r.status+')',['الموقع غير منشور على Vercel، أو رُفع ملف index.html وحده.','انشر المجلد كاملًا (يشمل api وlib وvercel.json وpackage.json) على Vercel.','استخدم رابط الإنتاج نفسه على كل الأجهزة.']);return}
-  if(!r.ok){show('bad','الخادم رد بخطأ '+r.status+(j.error?': '+esc(String(j.error)):''),['افتح Vercel ← Logs وراجع الخطأ، وتأكد أن Blob Store مربوط بنفس المشروع.']);return}
-  try{await capi('list',{admin:true,ask:true});show('ok','☁️ السحابة تعمل والمفتاح صحيح — كل تعديل يُنشر تلقائيًا',[])}
-  catch(e){
-    if(e.message==='nokey')show('warn','السحابة تعمل لكن لم تُدخل مفتاح الإدارة على هذا الجهاز',['اضغط «نشر الآن» وأدخل قيمة ADMIN_UPLOAD_KEY مرة واحدة.']);
-    else if(e.message==='unauthorized')show('bad','المفتاح غير صحيح',['تأكد أن القيمة مطابقة تمامًا لمتغير ADMIN_UPLOAD_KEY في Vercel (وأنك أعدت النشر بعد إضافته).']);
+  if(r.status===503&&j&&j.error==='not_configured'){show('bad','الخادم يعمل لكن التخزين غير مضبوط',['Vercel: Storage ← Create ← Blob ← اربطه بالمشروع (يُضاف BLOB_READ_WRITE_TOKEN تلقائيًا) ثم Redeploy.','أو استخدم خادم AppCloud المستقل بدل Vercel Blob (لا يحتاج أي خدمة تخزين).']);return}
+  if(!j){show('bad','هذا الرابط لا يشغّل AppCloud (الاستجابة '+r.status+')',['الموقع مرفوع كملفات ثابتة فقط — لذلك يحفظ كل متصفح بياناته وحده.',HOWTO,'استخدم رابطًا واحدًا (الإنتاج) على كل الأجهزة.']);return}
+  if(!r.ok){show('bad','الخادم رد بخطأ '+r.status+(j.error?': '+esc(String(j.error)):''),['راجع سجلّ الخادم (Vercel ← Logs).']);return}
+  try{
+    await capi('list',{admin:true,ask:true});
+    try{var st=await capi('selftest',{admin:true,timeout:15000});show('ok','☁️ AppCloud يعمل والمفتاح صحيح — كل تعديل يُنشر تلقائيًا ('+esc(st.storage||'')+')',[])}
+    catch(e2){show('bad','المفتاح صحيح لكن الكتابة في التخزين فشلت'+(e2.detail?': '+esc(e2.detail):''),['Vercel Blob: تأكد أن المخزن من نوع <b>Public</b> (المخازن الخاصة Private لا تقبل هذا الاستخدام) وأن BLOB_READ_WRITE_TOKEN يخصّ نفس المشروع.','أو استخدم خادم AppCloud المستقل.'])}
+  }catch(e){
+    if(e.message==='nokey')show('warn','AppCloud يعمل لكن لم تُدخل مفتاح الإدارة على هذا الجهاز',['اضغط «🔑 مفتاح السحابة» وأدخل قيمة ADMIN_UPLOAD_KEY مرة واحدة.']);
+    else if(e.message==='unauthorized')show('bad','المفتاح غير صحيح',['تأكد أن القيمة مطابقة تمامًا لـ ADMIN_UPLOAD_KEY على الخادم (وأن الخادم أُعيد تشغيله/نشره بعد ضبطه).']);
     else show('bad','تعذّر التحقق: '+esc(e.message||''),[]);
   }
 }
@@ -1985,6 +2003,16 @@ function bindAuthButtons(){
 }
 
 /* ===== Vercel Blob — رفع سحابي ===== */
+async function uploadToAppCloud(file){
+  if(!isAdmin||!adminPriv)return null;
+  var k=await getCloudKey(true);if(!k)return null;
+  var r=await fetch('/api/cloud?action=file&name='+encodeURIComponent(file.name||'file'),{method:'POST',headers:{'x-admin-key':k,'content-type':file.type||'application/octet-stream'},body:file});
+  if(r.status===404||r.status===405||r.status===400&&false)return null;
+  var j=null;try{j=await r.json()}catch(e){}
+  if(r.status===401){sessionStorage.removeItem('e_upk');throw cerr('unauthorized')}
+  if(!r.ok||!j||!j.url)return null;
+  return j;
+}
 async function uploadToVercelBlob(file, onProgress) {
   if (!file) throw new Error('لا يوجد ملف');
   // يعمل بعد النشر على Vercel مع BLOB_READ_WRITE_TOKEN
@@ -2002,13 +2030,27 @@ async function uploadToVercelBlob(file, onProgress) {
 }
 
 /** رفع ملف: يحاول السحابة أولاً ثم Base64 محليًا كاحتياطي */
+function shrinkImage(file,maxPx,q){
+  return new Promise(function(res){
+    if(!file||!/^image\/(jpeg|png|webp)$/.test(file.type)){res(file);return}
+    var url=URL.createObjectURL(file),im=new Image();
+    im.onload=function(){try{
+      var sc=Math.min(1,maxPx/Math.max(im.width,im.height)),w=Math.max(1,Math.round(im.width*sc)),h=Math.max(1,Math.round(im.height*sc));
+      var c=document.createElement('canvas');c.width=w;c.height=h;var x=c.getContext('2d');x.fillStyle='#fff';x.fillRect(0,0,w,h);x.drawImage(im,0,0,w,h);
+      c.toBlob(function(b){URL.revokeObjectURL(url);if(!b||b.size>=file.size&&sc===1){res(file);return}
+        var nf=new File([b],(file.name||'img').replace(/\.\w+$/,'')+'.jpg',{type:'image/jpeg'});res(nf)},'image/jpeg',q)
+    }catch(e){URL.revokeObjectURL(url);res(file)}};
+    im.onerror=function(){URL.revokeObjectURL(url);res(file)};im.src=url})
+}
 async function smartUploadFile(file) {
   if (!file) return null;
+  file = await shrinkImage(file, 720, 0.82);
   var isLocal = location.protocol === 'file:';
   var isHttp = location.protocol === 'http:' || location.protocol === 'https:';
   if (isHttp && location.hostname !== '') {
     try {
       toast('جاري الرفع إلى السحابة...');
+      try{var ac=await uploadToAppCloud(file);if(ac){toast('تم الرفع السحابي');return {url:ac.url,name:file.name,cloud:true}}}catch(e){if(e&&e.message==='unauthorized')throw e}
       var blob = await uploadToVercelBlob(file);
       toast('تم الرفع السحابي');
       return { url: blob.url, name: file.name, cloud: true };
@@ -2033,7 +2075,7 @@ async function smartUploadFile(file) {
 
 
 var VIEWS={home:['structure','committees','news'],news:['news'],structure:['structure'],committees:['committees'],stocks:['stocks'],portfolio:['portfolio'],complaints:['complaints'],voting:['voting'],services:['services'],regulations:['regulations'],member:[]};
-var VIEW_TITLES={home:'اتحاد العاملين المساهمين بشركة مصر للألومنيوم',news:'الأخبار والقرارات',structure:'مجلس الإدارة',committees:'اللجان الفرعية',stocks:'البورصة',portfolio:'المحفظة',complaints:'الشكاوى والاقتراحات',voting:'الجمعية العامة',services:'الخدمات',regulations:'لوائح الشركة',member:'صفحتي'};
+var VIEW_TITLES={home:'الرئيسية',news:'الأخبار والقرارات',structure:'مجلس الإدارة',committees:'اللجان الفرعية',stocks:'البورصة',portfolio:'المحفظة',complaints:'الشكاوى والاقتراحات',voting:'الجمعية العامة',services:'الخدمات',regulations:'لوائح الشركة',member:'صفحتي'};
 var ALL_VIEW_SECTIONS=['structure','committees','news','stocks','portfolio','complaints','voting','services','regulations'];
 var curView='home';
 function showView(v,keepScroll){
@@ -2041,7 +2083,6 @@ function showView(v,keepScroll){
   curView=v;var show=VIEWS[v];
   ALL_VIEW_SECTIONS.forEach(function(id){var el=document.getElementById(id);if(el)el.classList.toggle('vhide',show.indexOf(id)<0)});
   if(v!=='member'){['memberDash','memberDetails'].forEach(function(id){var el=document.getElementById(id);if(el)el.style.display='none'})}
-  var bh=document.getElementById('brandHeader');if(bh)bh.classList.toggle('vhide',v!=='home');
   var t=document.getElementById('topbarTitle');if(t)t.textContent=VIEW_TITLES[v]||'';
   document.querySelectorAll('.nav-side').forEach(function(a){a.classList.toggle('active',a.getAttribute('href')==='#'+v)});
   if(!keepScroll)window.scrollTo(0,0);
@@ -2093,7 +2134,7 @@ function renderHomePreviews(){
   var logo=document.getElementById('headerLogoImg');
   var sl=document.getElementById('sidebarLogo');
   if(logo&&sl)sl.src=logo.src;
-  var bb=document.getElementById('brandBanner');if(logo&&bb&&!bb.getAttribute('src'))bb.src=logo.src;
+  var bb=document.getElementById('brandBanner');if(logo&&bb&&bb.getAttribute('src')!==logo.src)bb.src=logo.src;
 }
 function setupPWA(){
   if('serviceWorker' in navigator){
