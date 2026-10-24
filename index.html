@@ -310,6 +310,61 @@ footer{background:var(--primary-dark) var(--brushed);color:#a9bccd;padding:40px 
 .auth-btns{flex-wrap:nowrap}
 @media(max-width:600px){.topbar-title{font-size:.9rem}.app-banner .inner{flex-wrap:nowrap}.ab-txt{font-size:.78rem}}
 body.admin-mode .sb-row{display:none}
+/* ===== v7: صفحات مستقلة + هيكل + أخبار ===== */
+.vhide{display:none!important}
+.menu-toggle{display:inline-flex}
+@media(min-width:981px){body.sb-off .sidebar{transform:translateX(105%)}body.sb-off .main-wrap{margin-right:0}}
+.main-wrap{transition:margin-right .28s ease}
+.main-content>section:not(#memberDash){background:var(--bg)!important;padding:40px 0}
+.main-content>section+section{border-top:1px solid var(--border)}
+.main-content .container{max-width:1240px;padding:0 28px}
+.section-title{margin-bottom:28px}
+.section-title h2{font-size:1.7rem}
+.src-note{font-size:.88rem;color:var(--muted);background:#fff;border:1px solid var(--border);border-right:4px solid var(--primary);border-radius:8px;padding:10px 14px;margin-bottom:14px}
+.src-note a{color:var(--primary);font-weight:700;text-decoration:underline}
+/* مجلس الإدارة: الرئيس في الوسط ثم الأعضاء */
+.chair-wrap{display:flex;justify-content:center;margin-bottom:34px}
+.org-card.k-chair{width:min(100%,460px);padding:34px 28px 30px;border-top:4px solid var(--accent);background:#fff;text-align:center}
+.k-chair .avatar{width:190px;height:190px;font-size:3.6rem;border:4px solid #fff;box-shadow:0 0 0 2px var(--primary),0 14px 30px rgba(11,47,72,.18);margin-bottom:18px}
+.k-chair .role{font-size:1rem;color:#fff;background:var(--accent);display:inline-block;padding:3px 16px;border-radius:20px;margin-bottom:10px}
+.k-chair .name{font-size:1.8rem;font-weight:700;line-height:1.4}
+.k-chair .phone{font-size:1rem}
+.board-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(250px,1fr));gap:22px}
+.org-card.k-board{padding:28px 20px 24px;background:#fff}
+.k-board .avatar{width:112px;height:112px;font-size:2.3rem;margin-bottom:14px}
+.k-board .role{font-size:.9rem}.k-board .name{font-size:1.2rem;font-weight:700}.k-board .phone{font-size:.92rem}
+.comm-grid{grid-template-columns:repeat(auto-fit,minmax(220px,1fr));gap:22px}
+.org-card.k-comm{padding:26px 20px;background:#fff}
+.k-comm .avatar{width:96px;height:96px;font-size:2rem;background:linear-gradient(135deg,#46627a,#2c4a63)}
+.k-comm .role{font-size:.95rem;font-weight:700;color:var(--primary)}.k-comm .name{font-size:1.1rem}
+.org-card .phone:empty{display:none}
+/* الأخبار والقرارات */
+.news-big{grid-template-columns:repeat(auto-fill,minmax(min(100%,380px),1fr));gap:22px}
+.news-big .news-card{background:#fff;border-radius:12px;border:1px solid var(--border);border-right:5px solid #0369a1;display:flex;flex-direction:column}
+.news-big .news-card:has(.badge-decision){border-right-color:var(--accent)}
+.news-big .news-card:has(.badge-meeting){border-right-color:#047857}
+.news-big .news-card:has(.badge-stocks){border-right-color:#b45309}
+.news-big .news-card .body{padding:24px 24px 18px;flex:1;display:flex;flex-direction:column}
+.news-big .badge{font-size:.82rem;padding:3px 12px;margin-bottom:12px;align-self:flex-start}
+.news-big .news-card h3{font-size:1.3rem;line-height:1.6;font-weight:700;color:var(--primary);margin-bottom:10px}
+.news-big .news-card p{font-size:1.02rem;line-height:2;color:#2a3d50;flex:1}
+.news-big .news-card .meta{font-size:.85rem;color:var(--muted);margin-top:16px;padding-top:12px;border-top:1px solid var(--border)}
+/* بقية الأقسام */
+.p-box,.complaint-item{background:#fff}
+.feature-card{background:#fff}
+.features-grid{grid-template-columns:repeat(auto-fill,minmax(220px,1fr));gap:18px}
+.stocks-table-wrap{background:#fff}
+table.stocks td,table.stocks th{padding:14px 16px;font-size:.95rem}
+@media(max-width:600px){
+  .main-content .container{padding:0 14px}
+  .section-title h2{font-size:1.35rem}
+  .k-chair .avatar{width:150px;height:150px}.k-chair .name{font-size:1.5rem}
+  .board-grid,.comm-grid{grid-template-columns:repeat(2,1fr);gap:12px}
+  .org-card.k-board,.org-card.k-comm{padding:20px 10px}
+  .k-board .avatar,.k-comm .avatar{width:84px;height:84px;font-size:1.8rem}
+  .news-big{grid-template-columns:1fr}
+}
+
 </style>
 <link rel="apple-touch-icon" href="icon-192.png"/>
 </head>
@@ -377,50 +432,6 @@ body.admin-mode .sb-row{display:none}
 <button class="btn btn-sm btn-gold" type="button" id="btnInstallApp" onclick="installApp()">تثبيت</button>
 <button class="ab-x" type="button" onclick="dismissInstall()" aria-label="إخفاء"><svg class="ico" aria-hidden="true"><use href="#i-x"/></svg></button>
 </div></div></div>
-<section class="hero" id="home"><div class="container hero-grid">
-<div class="hero-copy">
-<h2>أسهمكم وقراراتكم وصوتكم<br>في منصة واحدة</h2>
-<p>تابع سهم مصر للألومنيوم ومحفظة الاتحاد وقرارات مجلس الإدارة، وشارك في الجمعية العامة وأرسل شكواك — وبياناتك الشخصية مشفّرة.</p>
-<div class="hero-actions">
-<button class="btn btn-accent btn-lg" type="button" onclick="openRegister()">تسجيل عضو جديد</button>
-<button class="btn btn-light btn-lg" type="button" onclick="openLogin()">تسجيل الدخول</button>
-</div>
-</div>
-<aside class="ledger" id="stats" aria-label="مؤشرات الاتحاد">
-<div class="lg-head"><span class="lg-sym">EGAL</span><span class="lg-co">مصر للألومنيوم</span></div>
-<div class="lg-price"><b id="statPrice">—</b><small>جنيه</small><span class="lg-chg" id="statChange"></span></div>
-<dl class="lg-rows">
-<div><dt>عدد الأعضاء</dt><dd id="statMembers">0</dd></div>
-<div><dt>أسهم الاتحاد</dt><dd id="statShares">0</dd></div>
-<div><dt>القيمة السوقية (جنيه)</dt><dd id="statValue">0</dd></div>
-</dl>
-<div class="lg-foot">الأسعار إدخال إداري استرشادي وليست لحظية</div>
-</aside>
-</div></section>
-<section id="homeDashboard"><div class="container">
-<nav class="quick" aria-label="وصول سريع">
-<a class="q-item" href="#news" onclick="navGo(event,'news')"><svg class="ico q-ico" aria-hidden="true"><use href="#i-news"/></svg><span class="q-t">الأخبار والقرارات</span><span class="q-d">آخر ما صدر عن المجلس</span></a>
-<a class="q-item" href="#structure" onclick="navGo(event,'structure')"><svg class="ico q-ico" aria-hidden="true"><use href="#i-board"/></svg><span class="q-t">مجلس الإدارة</span><span class="q-d">الأعضاء واللجان</span></a>
-<a class="q-item" href="#stocks" onclick="navGo(event,'stocks')"><svg class="ico q-ico" aria-hidden="true"><use href="#i-chart"/></svg><span class="q-t">البورصة</span><span class="q-d">أسعار الأسهم</span></a>
-<a class="q-item" href="#portfolio" onclick="navGo(event,'portfolio')"><svg class="ico q-ico" aria-hidden="true"><use href="#i-wallet"/></svg><span class="q-t">المحفظة</span><span class="q-d">أسهم الاتحاد وقيمتها</span></a>
-<a class="q-item" href="#voting" onclick="navGo(event,'voting')"><svg class="ico q-ico" aria-hidden="true"><use href="#i-vote"/></svg><span class="q-t">الجمعية العامة</span><span class="q-d">التصويت الإلكتروني</span></a>
-<a class="q-item" href="#complaints" onclick="navGo(event,'complaints')"><svg class="ico q-ico" aria-hidden="true"><use href="#i-mail"/></svg><span class="q-t">الشكاوى</span><span class="q-d">رسالة مشفّرة للإدارة</span></a>
-</nav>
-<div class="home-grid">
-  <div class="home-panel">
-    <h3>آخر الأخبار والقرارات <a href="#news" onclick="navGo(event,'news')">عرض الكل</a></h3>
-    <div id="homeNewsPreview"></div>
-  </div>
-  <div class="home-panel">
-    <h3>مجلس الإدارة <a href="#structure" onclick="navGo(event,'structure')">التفاصيل</a></h3>
-    <div id="homeBoardPreview" class="org-grid org-mini"></div>
-  </div>
-</div>
-<div class="home-panel home-wide">
-  <h3>اللجان الفرعية <a href="#committees" onclick="navGo(event,'committees')">عرض اللجان</a></h3>
-  <div id="homeCommPreview" class="org-grid org-mini"></div>
-</div>
-</div></section>
 <section id="memberDash" style="display:none;background:linear-gradient(160deg,#072a40,#0b3d5c);color:#fff;padding:36px 0 28px">
 <div class="container">
 <div style="display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:12px;margin-bottom:20px">
@@ -462,16 +473,17 @@ body.admin-mode .sb-row{display:none}
 <button class="btn btn-ghost" type="button" onclick="showPrivacy()">🔒 الخصوصية</button>
 <button class="btn btn-danger btn-sm" type="button" onclick="deleteMyData()">حذف بياناتي</button>
 </div></div></section>
-<section id="structure" style="background:var(--bg)"><div class="container">
-<div class="section-title"><h2>الهيكل التنظيمي</h2><p>مجلس الإدارة واللجان الفرعية</p></div>
-<div class="admin-panel"><h3>⚙️ إدارة الهيكل</h3><div class="admin-toolbar"><button class="btn btn-success btn-sm" type="button" onclick="openOrgForm()">+ إضافة منصب</button></div></div>
-<div class="org-grid" id="orgGrid"></div>
-<div id="committees"></div><h3 style="text-align:center;margin:28px 0 14px;font-size:1.15rem;color:var(--primary);font-weight:700">اللجان الفرعية</h3>
-<div class="org-grid" id="commGrid"></div>
+<section id="structure"><div class="container">
+<div class="section-title"><h2>مجلس الإدارة</h2></div>
+<div class="admin-panel"><h3>⚙️ إدارة الهيكل</h3><div class="admin-toolbar"><button class="btn btn-success btn-sm" type="button" onclick="openOrgForm()">+ إضافة منصب أو لجنة</button></div></div>
+<div id="orgGrid" class="org-board"></div>
+</div></section>
+<section id="committees"><div class="container">
+<div class="section-title"><h2>اللجان الفرعية</h2></div>
+<div class="org-grid comm-grid" id="commGrid"></div>
 </div></section>
 <section id="stocks" style="background:#fff"><div class="container">
-<div class="section-title"><h2>البورصة وأسعار الأسهم</h2><p>المصدر الرسمي: <a href="https://www.egx.com.eg/ar/homepage.aspx" target="_blank" rel="noopener" style="color:var(--primary)">البورصة المصرية (EGX)</a> — الأسعار محاكاة للتجربة</p></div>
-<p style="font-size:.8rem;color:var(--muted);text-align:center;margin-bottom:10px">⚠️ الأسعار المعروضة إدخال إداري استرشادي وليست بيانات لحظية — راجع البورصة المصرية (EGX) للأسعار الرسمية.</p>
+<div class="section-title"><h2>البورصة وأسعار الأسهم</h2><p>المصدر: <a href="https://www.egx.com.eg/ar/homepage.aspx" target="_blank" rel="noopener" style="color:var(--primary)">البورصة المصرية (EGX)</a></p></div>
 <div class="admin-panel"><h3>⚙️ إدارة الأسهم</h3><div class="admin-toolbar">
 <button class="btn btn-success btn-sm" type="button" onclick="openStockForm()">+ إضافة سهم</button>
 <button class="btn btn-ghost btn-sm" type="button" onclick="refreshPrices()">🔄 تحديث</button>
@@ -480,6 +492,7 @@ body.admin-mode .sb-row{display:none}
 <span style="font-size:.82rem;color:var(--muted)">EGAL على <a href="https://egx.com.eg/en/CompanyDetails.aspx?ISIN=EGS3E181C010" target="_blank" style="color:var(--primary);text-decoration:underline">EGX ↗</a></span>
 <button class="btn btn-outline btn-sm" type="button" onclick="refreshPrices()">🔄 تحديث الأسعار</button>
 </div>
+<div class="src-note">المصدر: <a href="https://www.egx.com.eg/ar/homepage.aspx" target="_blank" rel="noopener">البورصة المصرية (EGX)</a> — الأسعار إدخال إداري استرشادي وليست لحظية.</div>
 <div class="stocks-table-wrap"><table class="stocks">
 <thead><tr><th>الرمز</th><th>الشركة</th><th>السعر</th><th>التغير</th><th>%</th><th>الحجم</th><th class="admin-actions">إجراء</th></tr></thead>
 <tbody id="stocksBody"></tbody></table></div>
@@ -506,7 +519,7 @@ body.admin-mode .sb-row{display:none}
 <button class="btn btn-success btn-sm" type="button" onclick="openNewsForm()">+ إضافة</button>
 <button class="btn btn-wa btn-sm" type="button" onclick="broadcastWA()">📱 إشعار واتساب</button>
 </div></div>
-<div class="news-grid" id="newsGrid"></div>
+<div class="news-grid news-big" id="newsGrid"></div>
 </div></section>
 <section id="complaints" style="background:var(--bg)"><div class="container">
 <div class="section-title"><h2>صندوق الشكاوى والاقتراحات</h2></div>
@@ -536,12 +549,12 @@ body.admin-mode .sb-row{display:none}
 <div class="section-title"><h2>خدمات الأعضاء</h2></div>
 <div class="features-grid">
 <div class="feature-card" onclick="showInfo('كشف الحساب','متاح بعد تسجيل الدخول.')"><div class="icon">📊</div><h3>كشف الحساب</h3><p>استقطاعات وأرباح</p></div>
-<div class="feature-card" onclick="document.getElementById('stocks').scrollIntoView({behavior:'smooth'})"><div class="icon">📈</div><h3>أسعار الأسهم</h3><p>متابعة البورصة</p></div>
-<div class="feature-card" onclick="document.getElementById('portfolio').scrollIntoView({behavior:'smooth'})"><div class="icon">💼</div><h3>المحفظة</h3><p>شخصي + اتحاد</p></div>
-<div class="feature-card" onclick="document.getElementById('complaints').scrollIntoView({behavior:'smooth'})"><div class="icon">✉️</div><h3>الشكاوى</h3><p>صندوق الاقتراحات</p></div>
-<div class="feature-card" onclick="document.getElementById('structure').scrollIntoView({behavior:'smooth'})"><div class="icon">🏛️</div><h3>اللجان</h3><p>تواصل مباشر</p></div>
-<div class="feature-card" onclick="document.getElementById('news').scrollIntoView({behavior:'smooth'})"><div class="icon">📢</div><h3>القرارات</h3><p>إعلانات رسمية</p></div>
-<div class="feature-card" onclick="document.getElementById('voting').scrollIntoView({behavior:'smooth'})"><div class="icon">🗳️</div><h3>الجمعية العامة</h3><p>تصويت إلكتروني مفعّل</p></div>
+<div class="feature-card" onclick="goView('stocks')"><div class="icon">📈</div><h3>أسعار الأسهم</h3><p>متابعة البورصة</p></div>
+<div class="feature-card" onclick="goView('portfolio')"><div class="icon">💼</div><h3>المحفظة</h3><p>شخصي + اتحاد</p></div>
+<div class="feature-card" onclick="goView('complaints')"><div class="icon">✉️</div><h3>الشكاوى</h3><p>صندوق الاقتراحات</p></div>
+<div class="feature-card" onclick="goView('structure')"><div class="icon">🏛️</div><h3>اللجان</h3><p>تواصل مباشر</p></div>
+<div class="feature-card" onclick="goView('news')"><div class="icon">📢</div><h3>القرارات</h3><p>إعلانات رسمية</p></div>
+<div class="feature-card" onclick="goView('voting')"><div class="icon">🗳️</div><h3>الجمعية العامة</h3><p>تصويت إلكتروني مفعّل</p></div>
 <div class="feature-card" onclick="installApp()"><div class="icon">📱</div><h3>تطبيق الموبايل</h3><p>تثبيت على الهاتف</p></div>
 <div class="feature-card" onclick="showLaw151()"><div class="icon">📜</div><h3>قانون 151 لسنة 2020</h3><p>حماية البيانات الشخصية</p></div>
 <div class="feature-card" onclick="showLaw95()"><div class="icon">⚖️</div><h3>قانون 95 لسنة 1992</h3><p>سوق رأس المال</p></div>
@@ -686,9 +699,9 @@ body.admin-mode .sb-row{display:none}
 <button class="btn btn-primary" type="button" onclick="closeM('adminHub');openDsHub()">📦 مركز التصدير والاستيراد وPDF</button>
 <button class="btn btn-primary" type="button" onclick="closeM('adminHub');openCredentials()">🔑 بيانات دخول الأعضاء</button>
 <button class="btn btn-primary" type="button" onclick="closeM('adminHub');openAdminPwd()">🔐 تغيير كلمة مرور الإدارة</button>
-<button class="btn btn-primary" type="button" onclick="closeM('adminHub');document.getElementById('voting').scrollIntoView({behavior:'smooth'});setTimeout(openVoteForm,400)">+ تصويت جمعية عامة</button>
+<button class="btn btn-primary" type="button" onclick="closeM('adminHub');goView('voting');setTimeout(openVoteForm,400)">+ تصويت جمعية عامة</button>
 <button class="btn btn-wa" type="button" onclick="broadcastWA()">📱 إشعار واتساب</button>
-<button class="btn btn-primary" type="button" onclick="closeM('adminHub');document.getElementById('regulations').scrollIntoView({behavior:'smooth'})">📁 لوائح الشركة</button>
+<button class="btn btn-primary" type="button" onclick="closeM('adminHub');goView('regulations')">📁 لوائح الشركة</button>
 <button class="btn btn-success" type="button" onclick="exportJSON()">⬇️ نسخة احتياطية كاملة (JSON)</button>
 <button class="btn btn-outline" type="button" onclick="document.getElementById('importFile').click()">⬆️ استعادة نسخة كاملة</button>
 <input type="file" id="importFile" accept="application/json,.json" style="display:none" onchange="importJSON(event)"/>
@@ -892,7 +905,7 @@ document.addEventListener('DOMContentLoaded',function(){
   cloudBoot();
   if(isAdmin)enableAdmin();
   if(currentMember){showMemberPortfolio();showMemberDash()}
-  setupPWA();bindAuthButtons();try{var sl=document.getElementById('sidebarLogo');if(sl&&typeof LOGO_DATA!=='undefined')sl.src=LOGO_DATA;else if(sl){var hi=document.getElementById('headerLogoImg');if(hi)sl.src=hi.src}}catch(e){}
+  setupPWA();bindAuthButtons();applySbPref();showView(((location.hash||'').slice(1))||'home',true);try{var sl=document.getElementById('sidebarLogo');if(sl&&typeof LOGO_DATA!=='undefined')sl.src=LOGO_DATA;else if(sl){var hi=document.getElementById('headerLogoImg');if(hi)sl.src=hi.src}}catch(e){}
 });
 
 function renderAll(){renderOrg();renderNews();renderStocks();renderStats();renderComplaints();renderFinance();renderVotes();renderRegulations();renderHomePreviews()}
@@ -901,18 +914,7 @@ function openM(id){document.getElementById(id).classList.add('show');document.bo
 function closeM(id){document.getElementById(id).classList.remove('show');document.body.style.overflow=''}
 document.querySelectorAll('.modal-overlay').forEach(function(o){o.addEventListener('click',function(e){if(e.target===o){o.classList.remove('show');document.body.style.overflow=''}})});
 
-function renderStats(){
-  fin.members=memberCount();
-  document.getElementById('statMembers').textContent=fin.members.toLocaleString('ar-EG-u-nu-latn');
-  document.getElementById('statShares').textContent=fin.shares.toLocaleString('ar-EG-u-nu-latn');
-  var egal=stocks.find(function(s){return s.symbol==='EGAL'});
-  var mkt=egal?(fin.shares*egal.price).toFixed(0):(fin.shares*fin.avgCost).toFixed(0);
-  document.getElementById('statValue').textContent=Number(mkt).toLocaleString('ar-EG-u-nu-latn');
-  var pe=document.getElementById('statPrice');
-  if(pe){pe.textContent=egal?Number(egal.price).toFixed(2):'—';
-    var ce=document.getElementById('statChange');
-    if(ce){if(egal&&egal.prev){var d=egal.price-egal.prev,pc=d/egal.prev*100;ce.textContent=(d>=0?'▲ ':'▼ ')+Math.abs(pc).toFixed(2)+'%';ce.className='lg-chg '+(d>=0?'up':'down')}else{ce.textContent='';ce.className='lg-chg'}}}
-}
+function renderStats(){fin.members=memberCount()}
 function renderFinance(){
   document.getElementById('uShares').textContent=fin.shares.toLocaleString('ar-EG-u-nu-latn');
   document.getElementById('uAvg').textContent=fin.avgCost.toFixed(2)+' ج';
@@ -954,18 +956,13 @@ function showMemberDash(){
   document.getElementById('mdUMkt').textContent=uMkt.toLocaleString('ar-EG-u-nu-latn',{maximumFractionDigits:0})+' ج';
   document.getElementById('mdUDiv').textContent=fin.dividends.toLocaleString('ar-EG-u-nu-latn')+' ج';
   document.getElementById('mdUMem').textContent=memberCount().toLocaleString('ar-EG-u-nu-latn');
-  document.getElementById('home').style.display='none';
-  document.getElementById('stats').style.display='none';
+  showView('member');
   document.getElementById('memberDash').style.display='block';
   document.getElementById('memberDetails').style.display='block';
   showMemberPortfolio();window.scrollTo({top:0,behavior:'smooth'});
 }
 function backToMain(){
-  document.getElementById('home').style.display='';
-  document.getElementById('stats').style.display='';
-  document.getElementById('memberDash').style.display='none';
-  document.getElementById('memberDetails').style.display='none';
-  window.scrollTo({top:0,behavior:'smooth'});
+  showView('home');
 }
 function openLogin(){document.getElementById('loginErr').classList.remove('show');document.getElementById('loginUser').value='';document.getElementById('loginPass').value='';openM('loginModal')}
 var _loginBusy=false;
@@ -1032,13 +1029,17 @@ async function doRegister(){
   else{lockFail('reg');err.textContent='لا مطابقة في القاعدة — تواصل مع الإدارة';err.classList.add('show')}
 }
 function renderOrg(){
-  document.getElementById('orgGrid').innerHTML=org.filter(function(o){return o.type==='board'}).map(orgHTML).join('');
-  document.getElementById('commGrid').innerHTML=org.filter(function(o){return o.type==='committee'}).map(orgHTML).join('');
+  var boards=org.filter(function(o){return o.type==='board'});
+  var chair=boards.find(function(o){return /رئيس/.test(o.role)&&!/نائب/.test(o.role)});
+  var rest=boards.filter(function(o){return o!==chair});
+  document.getElementById('orgGrid').innerHTML=(chair?'<div class="chair-wrap">'+orgHTML(chair,'chair')+'</div>':'')+
+    (rest.length?'<div class="board-grid">'+rest.map(function(o){return orgHTML(o,'board')}).join('')+'</div>':'');
+  document.getElementById('commGrid').innerHTML=org.filter(function(o){return o.type==='committee'}).map(function(o){return orgHTML(o,'comm')}).join('');
 }
-function orgHTML(o){
+function orgHTML(o,kind){
   var av=o.photo?'<img src="'+esc(o.photo)+'" alt=""/>':esc(o.init||'?');
-  var wa=o.wa?'<div class="wa"><a href="https://wa.me/'+esc(o.wa.replace(/\D/g,''))+'" target="_blank" style="color:#25d366">📱 واتساب</a></div>':'';
-  return '<div class="org-card"><div class="avatar">'+av+'</div><div class="role">'+esc(o.role)+'</div><div class="name">'+esc(o.name)+'</div><div class="phone">📞 '+esc(o.phone||'—')+'</div>'+wa+
+  var wa=o.wa?'<div class="wa"><a href="https://wa.me/'+esc(o.wa.replace(/\D/g,''))+'" target="_blank" rel="noopener" style="color:#128c4a">واتساب</a></div>':'';
+  return '<div class="org-card'+(kind?' k-'+kind:'')+'"><div class="avatar">'+av+'</div><div class="role">'+esc(o.role)+'</div><div class="name">'+esc(o.name)+'</div><div class="phone">'+(o.phone&&o.phone!=='—'?'📞 '+esc(o.phone):'')+'</div>'+wa+
     '<div class="admin-actions"><button class="btn btn-sm btn-ghost" type="button" onclick="editOrg('+o.id+')">تعديل</button><button class="btn btn-sm btn-danger" type="button" onclick="delOrg('+o.id+')">حذف</button></div></div>';
 }
 function openOrgForm(id){
@@ -1070,7 +1071,7 @@ function openNewsForm(id){document.getElementById('newsId').value=id||'';documen
 function saveNews(){var id=document.getElementById('newsId').value;var item={type:document.getElementById('newsType').value,title:document.getElementById('newsTit').value.trim(),content:document.getElementById('newsCont').value.trim(),source:document.getElementById('newsSrc').value.trim()||'مجلس الإدارة',date:document.getElementById('newsDate').value.trim()||'—'};if(!item.title||!item.content){toast('أدخل العنوان والمحتوى');return}if(id){var i=news.findIndex(function(n){return n.id===parseInt(id)});if(i>=0)news[i]=Object.assign({},news[i],item)}else{news.push(Object.assign({id:(news.length?Math.max.apply(null,news.map(function(n){return n.id}))+1:1)},item))}safeSet('e_news',JSON.stringify(news));renderNews();closeM('newsModal');toast('تم');pushSync('news','خبر/قرار جديد على المنصة')}
 function editNews(id){openNewsForm(id)}function delNews(id){if(!confirm('حذف؟'))return;news=news.filter(function(n){return n.id!==id});safeSet('e_news',JSON.stringify(news));renderNews();toast('تم')}
 function renderStocks(){document.getElementById('stocksBody').innerHTML=stocks.map(function(s){var ch=s.price-s.prev;var pct=s.prev?((ch/s.prev)*100).toFixed(2):'0.00';var cls=ch>0?'up':(ch<0?'down':'');var sign=ch>0?'+':'';return '<tr><td><strong dir="ltr">'+esc(s.symbol)+'</strong></td><td>'+esc(s.name)+'</td><td dir="ltr">'+s.price.toFixed(2)+'</td><td class="'+cls+'" dir="ltr">'+sign+ch.toFixed(2)+'</td><td class="'+cls+'" dir="ltr">'+sign+pct+'%</td><td dir="ltr">'+s.volume.toLocaleString()+'</td><td class="admin-actions"><button class="btn btn-sm btn-ghost" type="button" onclick="editStock('+s.id+')">تعديل</button><button class="btn btn-sm btn-danger" type="button" onclick="delStock('+s.id+')">حذف</button></td></tr>'}).join('');document.getElementById('stockTime').textContent='آخر تحديث: '+new Date().toLocaleString('ar-EG-u-nu-latn');renderStats();renderFinance();if(currentMember)showMemberPortfolio()}
-function refreshPrices(){toast('لا يوجد مصدر أسعار حي متصل. حدّث السعر يدويًا من «تعديل» أو اربط Supabase + مزود بيانات مرخّص. (تم إيقاف المحاكاة العشوائية حتى لا تظهر أسعار غير حقيقية)',6000)}
+function refreshPrices(){toast('لا يوجد ربط آلي بالبورصة حاليًا — تُحدَّث الأسعار يدويًا من الإدارة (زر «تعديل»). المصدر: البورصة المصرية EGX — egx.com.eg',6500)}
 function openStockForm(id){document.getElementById('stockId').value=id||'';document.getElementById('stockTitle').textContent=id?'تعديل':'إضافة';if(id){var it=stocks.find(function(s){return s.id===id});if(it){document.getElementById('stSym').value=it.symbol;document.getElementById('stName').value=it.name;document.getElementById('stPrice').value=it.price}}else{document.getElementById('stSym').value='';document.getElementById('stName').value='';document.getElementById('stPrice').value=''}openM('stockModal')}
 function saveStock(){var id=document.getElementById('stockId').value;var sym=document.getElementById('stSym').value.trim().toUpperCase();var name=document.getElementById('stName').value.trim();var price=parseFloat(document.getElementById('stPrice').value)||0;if(!sym||!name){toast('أدخل الرمز والاسم');return}if(id){var i=stocks.findIndex(function(s){return s.id===parseInt(id)});if(i>=0){stocks[i].symbol=sym;stocks[i].name=name;stocks[i].prev=stocks[i].price;stocks[i].price=price}}else{stocks.push({id:(stocks.length?Math.max.apply(null,stocks.map(function(s){return s.id}))+1:1),symbol:sym,name:name,price:price,prev:price,volume:0})}safeSet('e_stocks',JSON.stringify(stocks));renderStocks();closeM('stockModal');toast('تم');pushSync('stocks','تحديث قائمة الأسهم')}
 function editStock(id){openStockForm(id)}function delStock(id){if(!confirm('حذف؟'))return;stocks=stocks.filter(function(s){return s.id!==id});safeSet('e_stocks',JSON.stringify(stocks));renderStocks();toast('تم')}
@@ -1893,7 +1894,7 @@ function showLaw95(){
 }
 function openRegulations(){
   renderRegulations();
-  document.getElementById('regulations').scrollIntoView({behavior:'smooth'});
+  goView('regulations');
   if(!isAdmin && !currentMember){
     toast('الاطلاع على اللوائح للأعضاء المسجّلين فقط');
   }
@@ -1999,10 +2000,31 @@ async function smartUploadFile(file) {
 }
 
 
+var VIEWS={home:['structure','committees','news'],news:['news'],structure:['structure'],committees:['committees'],stocks:['stocks'],portfolio:['portfolio'],complaints:['complaints'],voting:['voting'],services:['services'],regulations:['regulations'],member:[]};
+var VIEW_TITLES={home:'الرئيسية',news:'الأخبار والقرارات',structure:'مجلس الإدارة',committees:'اللجان الفرعية',stocks:'البورصة',portfolio:'المحفظة',complaints:'الشكاوى والاقتراحات',voting:'الجمعية العامة',services:'الخدمات',regulations:'لوائح الشركة',member:'صفحتي'};
+var ALL_VIEW_SECTIONS=['structure','committees','news','stocks','portfolio','complaints','voting','services','regulations'];
+var curView='home';
+function showView(v,keepScroll){
+  if(!VIEWS[v])v='home';
+  curView=v;var show=VIEWS[v];
+  ALL_VIEW_SECTIONS.forEach(function(id){var el=document.getElementById(id);if(el)el.classList.toggle('vhide',show.indexOf(id)<0)});
+  if(v!=='member'){['memberDash','memberDetails'].forEach(function(id){var el=document.getElementById(id);if(el)el.style.display='none'})}
+  var t=document.getElementById('topbarTitle');if(t)t.textContent=VIEW_TITLES[v]||'';
+  document.querySelectorAll('.nav-side').forEach(function(a){a.classList.toggle('active',a.getAttribute('href')==='#'+v)});
+  if(!keepScroll)window.scrollTo(0,0);
+  try{if(v!=='member')history.replaceState(null,'',v==='home'?location.pathname+location.search:'#'+v)}catch(e){}
+}
+function goView(id){closeSidebar();showView(id)}
+document.addEventListener('click',function(e){
+  if(e.defaultPrevented)return;var a=e.target.closest&&e.target.closest('a[href^="#"]');if(!a)return;
+  var id=(a.getAttribute('href')||'').slice(1);if(id&&VIEWS[id]){e.preventDefault();goView(id)}
+});
+function applySbPref(){try{if(localStorage.getItem('e_sb')==='off')document.body.classList.add('sb-off')}catch(e){}}
 function toggleSidebar(){
   var s=document.getElementById('sidebar');
   var o=document.getElementById('sidebarOverlay');
   if(!s)return;
+  if(window.innerWidth>980){var off=document.body.classList.toggle('sb-off');try{localStorage.setItem('e_sb',off?'off':'on')}catch(e){}return}
   s.classList.toggle('open');
   if(o)o.classList.toggle('show',s.classList.contains('open'));
 }
@@ -2014,11 +2036,7 @@ function closeSidebar(){
 }
 function navGo(e,id){
   if(e)e.preventDefault();
-  closeSidebar();
-  var el=document.getElementById(id);
-  if(el)el.scrollIntoView({behavior:'smooth',block:'start'});
-  document.querySelectorAll('.nav-side').forEach(function(a){a.classList.remove('active')});
-  if(e&&e.currentTarget)e.currentTarget.classList.add('active');
+  goView(id);
 }
 function renderHomePreviews(){
   var hn=document.getElementById('homeNewsPreview');
