@@ -365,6 +365,14 @@ table.stocks td,table.stocks th{padding:14px 16px;font-size:.95rem}
   .news-big{grid-template-columns:1fr}
 }
 
+.main-content>section#brandHeader{text-align:center;padding:28px 0 22px;background:#fff!important;border-bottom:1px solid var(--border)}
+.brand-header img{max-width:min(100%,820px);margin:0 auto 14px;height:auto}
+.brand-header h1{font-size:clamp(1.5rem,3vw,2.3rem);font-weight:700;line-height:1.5;color:var(--primary);position:relative;display:inline-block;padding-bottom:12px}
+.brand-header h1::after{content:'';position:absolute;bottom:0;right:25%;left:25%;height:3px;background:var(--accent);border-radius:2px}
+.brand-header .en{font-size:.88rem;color:var(--muted);margin:8px 0 16px}
+.cdiag{border-radius:8px;padding:10px 14px;margin:8px 0;font-size:.88rem;background:#eef2f7;border-right:4px solid #94a3b8}
+.cdiag.ok{background:#e1f6ec;border-color:#16a34a}.cdiag.warn{background:#fff4dc;border-color:#d97706}.cdiag.bad{background:#fde8ea;border-color:#b91c1c}
+.cdiag ol{margin:6px 22px 0;line-height:1.9}
 </style>
 <link rel="apple-touch-icon" href="icon-192.png"/>
 </head>
@@ -432,6 +440,11 @@ table.stocks td,table.stocks th{padding:14px 16px;font-size:.95rem}
 <button class="btn btn-sm btn-gold" type="button" id="btnInstallApp" onclick="installApp()">تثبيت</button>
 <button class="ab-x" type="button" onclick="dismissInstall()" aria-label="إخفاء"><svg class="ico" aria-hidden="true"><use href="#i-x"/></svg></button>
 </div></div></div>
+<section id="brandHeader" class="brand-header"><div class="container">
+<img id="brandBanner" src="" alt="شعارات اتحاد العاملين المساهمين بشركة مصر للألومنيوم"/>
+<h1>اتحاد العاملين المساهمين<br>بشركة مصر للألومنيوم</h1>
+<div class="en">Egypt Aluminum Company Employees' Shareholders Union — EACESU</div>
+</div></section>
 <section id="memberDash" style="display:none;background:linear-gradient(160deg,#072a40,#0b3d5c);color:#fff;padding:36px 0 28px">
 <div class="container">
 <div style="display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:12px;margin-bottom:20px">
@@ -682,6 +695,7 @@ table.stocks td,table.stocks th{padding:14px 16px;font-size:.95rem}
 <div class="modal-overlay" id="cloudModal"><div class="modal wide"><h3>☁️ المزامنة السحابية</h3>
 <p style="font-size:.84rem;color:var(--muted);margin-bottom:8px">كل تعديل تجريه يُنشر تلقائيًا بعد ثوانٍ ليراه كل الزوار والأعضاء على أي جهاز. الأعضاء والشكاوى والأصوات مشفّرة. <span id="cloudStat"></span></p>
 <div class="modal-actions" style="justify-content:flex-start"><button class="btn btn-success" type="button" onclick="cloudSyncNow()">⬆️ نشر الآن + تحديث الشكاوى والأصوات</button><button class="btn btn-outline" type="button" onclick="cloudPullNow()">⬇️ تحميل بيانات السحابة</button><button class="btn btn-outline" type="button" onclick="cloudBackup()">🗄️ رفع نسخة احتياطية مشفّرة</button></div>
+<div id="cloudDiag" class="cdiag"></div>
 <h4 style="margin:12px 0 6px;font-size:.9rem">النسخ الاحتياطية المشفّرة</h4>
 <div id="cloudList" style="max-height:34vh;overflow:auto"></div>
 <div class="modal-actions"><button class="btn btn-ghost" type="button" onclick="closeM('cloudModal')">إغلاق</button></div>
@@ -1675,7 +1689,25 @@ function saveAllNow(quiet){
 }
 document.addEventListener('keydown',function(e){if((e.ctrlKey||e.metaKey)&&String(e.key).toLowerCase()==='s'&&isAdmin&&adminPriv){e.preventDefault();saveAllNow()}});
 function updateCloudStat(){var el=document.getElementById('cloudStat');if(!el)return;el.textContent=CLOUD.on===false?'الخادم السحابي غير مفعّل على هذا الاستضافة.':(CLOUD.last?('آخر مزامنة '+fmtTime(CLOUD.last)):'لم تتم مزامنة بعد')}
-function openCloud(){if(!adminPriv){toast('للإدارة فقط');return}updateCloudStat();openM('cloudModal');if(CLOUD.on!==false)cloudRefresh()}
+function openCloud(){if(!adminPriv){toast('للإدارة فقط');return}updateCloudStat();openM('cloudModal');cloudDiagnose();if(CLOUD.on!==false)cloudRefresh()}
+async function cloudDiagnose(){
+  var box=document.getElementById('cloudDiag');if(!box)return;
+  function show(cls,title,steps){box.className='cdiag '+cls;box.innerHTML='<strong>'+title+'</strong>'+(steps&&steps.length?'<ol>'+steps.map(function(x){return '<li>'+x+'</li>'}).join('')+'</ol>':'')}
+  box.className='cdiag';box.textContent='جاري فحص الاتصال بالسحابة…';
+  if(location.protocol==='file:'){show('bad','الصفحة مفتوحة كملف من الجهاز — لا يوجد خادم',['ارفع المجلد كاملًا على Vercel وافتح رابط الموقع (https://…vercel.app).']);return}
+  var r,txt='',j=null;
+  try{r=await fetch('/api/cloud?action=public',{cache:'no-store'});txt=await r.text();try{j=JSON.parse(txt)}catch(e){}}
+  catch(e){show('bad','تعذّر الوصول إلى الخادم',['تحقق من الإنترنت ثم أعد المحاولة.']);return}
+  if(r.status===503&&j&&j.error==='not_configured'){show('bad','الخادم يعمل لكن تخزين Blob غير مفعّل',['في Vercel: Storage ← Create ← Blob ← اربطه بالمشروع (يُضاف BLOB_READ_WRITE_TOKEN تلقائيًا).','Settings ← Environment Variables ← أضف ADMIN_UPLOAD_KEY بقيمة طويلة وصعبة التخمين من اختيارك.','Deployments ← Redeploy ثم أعد فتح هذه النافذة.']);return}
+  if(!j){show('bad','هذا الرابط لا يشغّل ملف الخادم api/cloud.js (الاستجابة '+r.status+')',['الموقع غير منشور على Vercel، أو رُفع ملف index.html وحده.','انشر المجلد كاملًا (يشمل api وlib وvercel.json وpackage.json) على Vercel.','استخدم رابط الإنتاج نفسه على كل الأجهزة.']);return}
+  if(!r.ok){show('bad','الخادم رد بخطأ '+r.status+(j.error?': '+esc(String(j.error)):''),['افتح Vercel ← Logs وراجع الخطأ، وتأكد أن Blob Store مربوط بنفس المشروع.']);return}
+  try{await capi('list',{admin:true,ask:true});show('ok','☁️ السحابة تعمل والمفتاح صحيح — كل تعديل يُنشر تلقائيًا',[])}
+  catch(e){
+    if(e.message==='nokey')show('warn','السحابة تعمل لكن لم تُدخل مفتاح الإدارة على هذا الجهاز',['اضغط «نشر الآن» وأدخل قيمة ADMIN_UPLOAD_KEY مرة واحدة.']);
+    else if(e.message==='unauthorized')show('bad','المفتاح غير صحيح',['تأكد أن القيمة مطابقة تمامًا لمتغير ADMIN_UPLOAD_KEY في Vercel (وأنك أعدت النشر بعد إضافته).']);
+    else show('bad','تعذّر التحقق: '+esc(e.message||''),[]);
+  }
+}
 async function cloudPullNow(){
   if(!adminPriv)return;if(!confirm('سيتم استبدال بيانات هذا الجهاز بآخر نسخة منشورة على السحابة. متابعة؟'))return;
   try{var p=await capi('public');if(p.empty){toast('لا توجد بيانات منشورة بعد');return}await adminPullAll(p);toast('☁️ تم تحميل بيانات السحابة')}catch(e){toast('تعذّر التحميل: '+(isNoCloud(e)?'الخادم غير مفعّل':e.message),5000)}
@@ -2001,7 +2033,7 @@ async function smartUploadFile(file) {
 
 
 var VIEWS={home:['structure','committees','news'],news:['news'],structure:['structure'],committees:['committees'],stocks:['stocks'],portfolio:['portfolio'],complaints:['complaints'],voting:['voting'],services:['services'],regulations:['regulations'],member:[]};
-var VIEW_TITLES={home:'الرئيسية',news:'الأخبار والقرارات',structure:'مجلس الإدارة',committees:'اللجان الفرعية',stocks:'البورصة',portfolio:'المحفظة',complaints:'الشكاوى والاقتراحات',voting:'الجمعية العامة',services:'الخدمات',regulations:'لوائح الشركة',member:'صفحتي'};
+var VIEW_TITLES={home:'اتحاد العاملين المساهمين بشركة مصر للألومنيوم',news:'الأخبار والقرارات',structure:'مجلس الإدارة',committees:'اللجان الفرعية',stocks:'البورصة',portfolio:'المحفظة',complaints:'الشكاوى والاقتراحات',voting:'الجمعية العامة',services:'الخدمات',regulations:'لوائح الشركة',member:'صفحتي'};
 var ALL_VIEW_SECTIONS=['structure','committees','news','stocks','portfolio','complaints','voting','services','regulations'];
 var curView='home';
 function showView(v,keepScroll){
@@ -2009,6 +2041,7 @@ function showView(v,keepScroll){
   curView=v;var show=VIEWS[v];
   ALL_VIEW_SECTIONS.forEach(function(id){var el=document.getElementById(id);if(el)el.classList.toggle('vhide',show.indexOf(id)<0)});
   if(v!=='member'){['memberDash','memberDetails'].forEach(function(id){var el=document.getElementById(id);if(el)el.style.display='none'})}
+  var bh=document.getElementById('brandHeader');if(bh)bh.classList.toggle('vhide',v!=='home');
   var t=document.getElementById('topbarTitle');if(t)t.textContent=VIEW_TITLES[v]||'';
   document.querySelectorAll('.nav-side').forEach(function(a){a.classList.toggle('active',a.getAttribute('href')==='#'+v)});
   if(!keepScroll)window.scrollTo(0,0);
@@ -2060,6 +2093,7 @@ function renderHomePreviews(){
   var logo=document.getElementById('headerLogoImg');
   var sl=document.getElementById('sidebarLogo');
   if(logo&&sl)sl.src=logo.src;
+  var bb=document.getElementById('brandBanner');if(logo&&bb&&!bb.getAttribute('src'))bb.src=logo.src;
 }
 function setupPWA(){
   if('serviceWorker' in navigator){
