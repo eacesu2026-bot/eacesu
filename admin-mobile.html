@@ -1,0 +1,258 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,viewport-fit=cover"/>
+<meta name="theme-color" content="#5c4033"/>
+<meta name="apple-mobile-web-app-capable" content="yes"/>
+<meta name="apple-mobile-web-app-title" content="إدارة أبو يونس"/>
+<link rel="manifest" href="manifest-admin.json"/>
+<title>إدارة — اطلاع</title>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<script src="config.js"></script>
+<script src="io-tools.js"></script>
+<script src="notify.js"></script>
+<style>
+:root{--bg:#f7f1e6;--s:#fffdf9;--bd:#d4c4a8;--t:#3d2b22;--m:#8b7355;--p:#5c4033;--g:#15803d;--o:#c2410c}
+*{box-sizing:border-box;margin:0;padding:0}
+body{font-family:Segoe UI,Tahoma,Arial;background:var(--bg);color:var(--t);padding-bottom:70px;min-height:100vh}
+.top{position:sticky;top:0;z-index:10;background:var(--p);color:#f7f1e6;padding:12px 14px;display:flex;justify-content:space-between;align-items:center}
+.top h1{font-size:.95rem}
+.badge{font-size:.68rem;padding:3px 8px;border-radius:999px;background:rgba(255,255,255,.15)}
+.tabs{display:flex;gap:4px;padding:8px;background:var(--s);border-bottom:1px solid var(--bd);overflow-x:auto;position:sticky;top:48px;z-index:9}
+.tabs button{flex:1;min-width:72px;padding:10px 6px;border:0;border-radius:10px;background:transparent;color:var(--m);font-size:.72rem;font-weight:700}
+.tabs button.on{background:var(--p);color:#fff}
+.pane{display:none;padding:12px}.pane.on{display:block}
+.card{background:var(--s);border:1px solid var(--bd);border-radius:14px;padding:12px;margin-bottom:10px}
+.card h2{font-size:.88rem;margin-bottom:8px}
+label{font-size:.72rem;color:var(--m);display:block;margin:6px 0 3px}
+select,input{width:100%;padding:10px;border-radius:10px;border:1px solid var(--bd);font-size:.9rem}
+.kpi-row{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:10px}
+.kpi{background:#efe6d6;border-radius:12px;padding:10px;text-align:center}
+.kpi .l{font-size:.68rem;color:var(--m)}.kpi .v{font-size:1.05rem;font-weight:800;margin-top:2px}
+table{width:100%;border-collapse:collapse;font-size:.75rem}
+th,td{border-bottom:1px solid var(--bd);padding:6px 4px;text-align:right}
+.muted{color:var(--m);font-size:.72rem}
+.login{max-width:400px;margin:40px auto;padding:16px}
+.btn{width:100%;padding:12px;border:0;border-radius:10px;background:var(--p);color:#fff;font-weight:700;margin-top:10px}
+.msg{font-size:.8rem;margin-top:8px;min-height:1.2em}.msg.err{color:#b91c1c}
+a.map{color:#0e7490;font-weight:600}
+.note{font-size:.72rem;color:var(--m);margin-top:8px;line-height:1.5}
+</style>
+</head>
+<body>
+<div id="loginView" class="login">
+  <div class="card">
+    <h2 style="text-align:center">إدارة — <span style="color:var(--p)">اطلاع فقط</span></h2>
+    <p class="muted" style="text-align:center;margin-bottom:10px">نفس سحابة النظام · بدون تعديل أو اعتماد</p>
+    <label>البريد</label><input type="email" id="lgEmail"/>
+    <label>كلمة المرور</label><input type="password" id="lgPass"/>
+    <button class="btn" id="lgBtn">دخول</button>
+    <div class="msg" id="lgMsg"></div>
+    <p class="note">للاعتماد والتعديل استخدم لوحة الإدارة الكاملة من الكمبيوتر أو admin-reps.html</p>
+  </div>
+</div>
+
+<div id="appView" style="display:none">
+  <div class="top">
+    <h1>اطلاع الإدارة</h1>
+    <div><span class="badge" id="coBadge">—</span> <span class="badge" id="liveBadge">...</span></div>
+  </div>
+  <div class="tabs">
+    <button class="on" data-t="home">ملخص</button>
+    <button data-t="pend">مسودات</button>
+    <button data-t="mov">تحركات</button>
+    <button data-t="sales">مبيعات</button>
+  </div>
+
+  <div class="pane on" id="p-home">
+    <div class="card">
+      <label>الشركة</label>
+      <select id="company"><option>الراعي</option><option>الحموي</option><option>زدنا</option><option>فوليانا</option><option>بسكو مصر</option></select>
+      <button class="btn" id="btnLoad" style="margin-top:8px">تحديث</button>
+    </div>
+    <div class="kpi-row" id="kpis"></div>
+    <div class="card"><h2>آخر المواقع</h2><div id="locList" class="muted">—</div></div>
+  </div>
+
+  <div class="pane" id="p-pend">
+    <div class="card"><h2>مبيعات معلّقة</h2><div id="pendSales"></div></div>
+    <div class="card"><h2>تحصيل معلّق</h2><div id="pendCols"></div></div>
+    <div class="card"><h2>مصروف معلّق</h2><div id="pendExps"></div></div>
+    <p class="note">عرض فقط — الاعتماد من لوحة الإدارة الكاملة</p>
+  </div>
+
+  <div class="pane" id="p-mov">
+    <div class="card">
+      <label>مندوب</label><select id="movRep"><option value="">— الكل —</option></select>
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px">
+        <div><label>من</label><input type="date" id="movFrom"/></div>
+        <div><label>إلى</label><input type="date" id="movTo"/></div>
+      </div>
+      <button class="btn" id="btnMov">عرض التحركات</button>
+      <div id="movBody" style="margin-top:10px"></div>
+    </div>
+  </div>
+
+  <div class="pane" id="p-sales">
+    <div class="card">
+      <label>مندوب</label><select id="saleRep"><option value="">— الكل —</option></select>
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px">
+        <div><label>من</label><input type="date" id="saleFrom"/></div>
+        <div><label>إلى</label><input type="date" id="saleTo"/></div>
+      </div>
+      <button class="btn" id="btnSales">عرض المبيعات</button>
+      <div id="salesBody" style="margin-top:10px"></div>
+    </div>
+  </div>
+</div>
+
+<script>
+let sb, user, profiles={}, allReps=[];
+const $=id=>document.getElementById(id);
+function num(v){const n=parseFloat(v);return isNaN(n)?0:n}
+function fmt(n){return num(n).toLocaleString("en-US",{maximumFractionDigits:2})}
+function lineTotal(q,p,d,da){const g=num(q)*num(p);if(da!=null&&num(da)>0)return Math.max(0,g-num(da));return g*(1-num(d)/100)}
+function jobTitleFor(name){const n=String(name||"").trim();if(n==="فهد"||n.startsWith("فهد ")||n.endsWith(" فهد"))return "مشرف";return "مندوب";}
+function repName(id){const name=(profiles[id]&&profiles[id].name)||String(id).slice(0,8);return jobTitleFor(name)+" "+name;}
+
+function initSB(){
+  sb=supabase.createClient((window.SUPABASE_URL||"").trim(),(window.SUPABASE_ANON_KEY||"").trim(),{auth:{persistSession:true,autoRefreshToken:true}});
+}
+
+async function login(){
+  lgMsg.textContent=""; lgMsg.className="msg";
+  try{
+    initSB();
+    const {data,error}=await sb.auth.signInWithPassword({email:lgEmail.value.trim(),password:lgPass.value});
+    if(error) throw error;
+    user=data.user; await afterLogin();
+  }catch(e){ lgMsg.className="msg err"; lgMsg.textContent=e.message||String(e); }
+}
+
+async function afterLogin(){
+  loginView.style.display="none"; appView.style.display="block";
+  const t=new Date().toISOString().slice(0,10);
+  const a=new Date(); a.setDate(1);
+  movFrom.value=a.toISOString().slice(0,10); movTo.value=t;
+  saleFrom.value=movFrom.value; saleTo.value=t;
+  await refresh();
+  subscribeLive();
+  if(window.AYNotify) AYNotify.browser("إدارة أبو يونس","تم تفعيل الإشعارات");
+}
+
+async function loadProfiles(){
+  const {data}=await sb.from("rep_profiles").select("*");
+  const by={};
+  (data||[]).forEach(p=>{
+    if(!by[p.user_id]) by[p.user_id]={user_id:p.user_id,name:p.name,companies:[]};
+    if(p.company && !by[p.user_id].companies.includes(p.company)) by[p.user_id].companies.push(p.company);
+    if(Array.isArray(p.companies)) p.companies.forEach(c=>{if(!by[p.user_id].companies.includes(c)) by[p.user_id].companies.push(c)});
+  });
+  allReps=Object.values(by); profiles={}; allReps.forEach(p=>profiles[p.user_id]=p);
+  const opts='<option value="">— الكل —</option>'+allReps.map(p=>`<option value="${p.user_id}">${p.name}</option>`).join("");
+  movRep.innerHTML=opts; saleRep.innerHTML=opts;
+}
+
+async function refresh(){
+  const co=company.value; coBadge.textContent=co;
+  await loadProfiles();
+  const {data:s}=await sb.from("rep_sales_draft").select("*").eq("company",co).eq("status","pending");
+  const {data:c}=await sb.from("rep_collections_draft").select("*").eq("company",co).eq("status","pending");
+  const {data:e}=await sb.from("rep_expenses_draft").select("*").eq("company",co).eq("status","pending");
+  const {data:loc}=await sb.from("rep_locations").select("*").eq("company",co);
+  kpis.innerHTML=`
+    <div class="kpi"><div class="l">مبيعات معلّقة</div><div class="v">${(s||[]).length}</div></div>
+    <div class="kpi"><div class="l">تحصيل معلّق</div><div class="v">${(c||[]).length}</div></div>
+    <div class="kpi"><div class="l">مصروف معلّق</div><div class="v">${(e||[]).length}</div></div>
+    <div class="kpi"><div class="l">مواقع حية</div><div class="v">${(loc||[]).length}</div></div>`;
+  pendSales.innerHTML=(s||[]).map(x=>`<div style="padding:8px 0;border-bottom:1px solid var(--bd)"><b>${repName(x.rep_id)}</b> · ${x.customer_name}<div class="muted">${x.item_name} × ${fmt(x.qty)} · ${fmt(lineTotal(x.qty,x.price,x.disc,x.discAmt))} · ${x.sale_date}</div></div>`).join("")||'<div class="muted">لا شيء</div>';
+  pendCols.innerHTML=(c||[]).map(x=>`<div style="padding:8px 0;border-bottom:1px solid var(--bd)"><b>${repName(x.rep_id)}</b> · ${x.customer_name}<div class="muted">${fmt(x.amt)} · ${x.col_date}</div></div>`).join("")||'<div class="muted">لا شيء</div>';
+  pendExps.innerHTML=(e||[]).map(x=>`<div style="padding:8px 0;border-bottom:1px solid var(--bd)"><b>${repName(x.rep_id)}</b> · ${x.desc}<div class="muted">${fmt(x.amt)} · ${x.exp_date}</div></div>`).join("")||'<div class="muted">لا شيء</div>';
+  locList.innerHTML=(loc||[]).length?(loc||[]).map(l=>{
+    const age=Math.round((Date.now()-new Date(l.updated_at).getTime())/60000);
+    return `<div style="padding:6px 0"><b>${repName(l.rep_id)}</b> · قبل ${age} د · <a class="map" target="_blank" href="https://maps.google.com/?q=${l.lat},${l.lng}">خريطة</a></div>`;
+  }).join(""):'لا مواقع';
+  liveBadge.textContent="محدّث";
+}
+
+async function renderMov(){
+  const co=company.value, rid=movRep.value, from=movFrom.value, to=movTo.value;
+  const {data:vis}=await sb.from("rep_visits").select("*").eq("company",co).order("visited_at",{ascending:false}).limit(300);
+  const {data:loc}=await sb.from("rep_locations").select("*").eq("company",co);
+  const live=(loc||[]).filter(l=>!rid||l.rep_id===rid).map(l=>({visited_at:l.updated_at,rep_id:l.rep_id,customer_name:"موقع حي",notes:"",lat:l.lat,lng:l.lng,live:true}));
+  const rows=[...live,...(vis||[])].filter(v=>{
+    if(rid&&v.rep_id!==rid) return false;
+    const d=String(v.visited_at||"").slice(0,10);
+    if(from&&d<from) return false;
+    if(to&&d>to) return false;
+    return true;
+  });
+  movBody.innerHTML=rows.map(x=>`<div style="padding:8px 0;border-bottom:1px solid var(--bd)">
+    <b>${repName(x.rep_id)}</b> · ${x.live?"📍":"زيارة"} ${x.customer_name||""}
+    <div class="muted">${x.visited_at?new Date(x.visited_at).toLocaleString("ar-EG"):""} · ${x.notes||""}</div>
+    ${x.lat?`<a class="map" target="_blank" href="https://maps.google.com/?q=${x.lat},${x.lng}">خريطة</a>`:""}
+  </div>`).join("")||'<div class="muted">لا تحركات</div>';
+}
+
+async function renderSales(){
+  const co=company.value, rid=saleRep.value, from=saleFrom.value, to=saleTo.value;
+  const {data:sales}=await sb.from("rep_sales_draft").select("*").eq("company",co);
+  const map={};
+  (sales||[]).forEach(x=>{
+    if(rid&&x.rep_id!==rid) return;
+    const d=String(x.sale_date||x.created_at||"").slice(0,10);
+    if(from&&d<from) return false;
+    if(to&&d>to) return false;
+    if(!map[x.rep_id]) map[x.rep_id]={name:repName(x.rep_id),val:0,n:0,pend:0};
+    map[x.rep_id].n++;
+    if(x.status==="approved") map[x.rep_id].val+=lineTotal(x.qty,x.price,x.disc,x.discAmt);
+    if(x.status==="pending") map[x.rep_id].pend++;
+  });
+  salesBody.innerHTML=Object.values(map).sort((a,b)=>b.val-a.val).map(m=>`<div style="padding:8px 0;border-bottom:1px solid var(--bd)">
+    <b>${m.name}</b><div class="muted">معتمد: ${fmt(m.val)} · عمليات: ${m.n} · معلّق: ${m.pend}</div>
+  </div>`).join("")||'<div class="muted">لا بيانات</div>';
+}
+
+function subscribeLive(){
+  try{
+    sb.channel("admin-mobile-live")
+      .on("postgres_changes",{event:"INSERT",schema:"public",table:"rep_sales_draft"}, payload=>{
+        if(window.AYNotify) AYNotify.both("مسودة بيع جديدة", (payload.new&&payload.new.customer_name)||"");
+        refresh();
+      })
+      .on("postgres_changes",{event:"INSERT",schema:"public",table:"rep_collections_draft"}, ()=>{ if(window.AYNotify) AYNotify.both("تحصيل جديد",""); refresh(); })
+      .on("postgres_changes",{event:"INSERT",schema:"public",table:"rep_expenses_draft"}, ()=>{ if(window.AYNotify) AYNotify.both("مصروف جديد",""); refresh(); })
+      .on("postgres_changes",{event:"UPDATE",schema:"public",table:"rep_locations"}, ()=>refresh())
+      .subscribe();
+    liveBadge.textContent="مباشر";
+  }catch(e){ liveBadge.textContent="عادي"; }
+}
+
+document.querySelectorAll(".tabs button").forEach(b=>{
+  b.onclick=()=>{
+    document.querySelectorAll(".tabs button").forEach(x=>x.classList.remove("on"));
+    document.querySelectorAll(".pane").forEach(x=>x.classList.remove("on"));
+    b.classList.add("on"); $("p-"+b.dataset.t).classList.add("on");
+  };
+});
+lgBtn.onclick=login; btnLoad.onclick=refresh; btnMov.onclick=renderMov; btnSales.onclick=renderSales;
+company.onchange=refresh;
+
+if("serviceWorker" in navigator){ navigator.serviceWorker.register("./sw.js").catch(()=>{}); }
+
+(async()=>{
+  try{
+    initSB();
+    const {data}=await sb.auth.getSession();
+    if(data.session){ user=data.session.user; await afterLogin(); }
+  }catch(e){}
+})();
+</script>
+
+<footer class="ay-footer no-print" style="text-align:center;margin:28px 12px 16px;padding:12px 10px;font-size:.72rem;color:#64748b;border-top:1px solid #e2e8f0;line-height:1.6">
+  تصميم وبرمجة د.م/ ايمن زغلول — ت/ 01063188440
+</footer>
+
+</body>
+</html>

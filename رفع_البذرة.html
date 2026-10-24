@@ -1,0 +1,37 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+<meta charset="UTF-8"/>
+<title>رفع البذرة للسحابة</title>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<script src="config.js"></script>
+<script src="io-tools.js"></script>
+<script src="cloud-sync.js"></script>
+<style>body{font-family:Tahoma;background:#0b1220;color:#eee;padding:24px}button{padding:8px 14px;margin:4px;cursor:pointer}</style>
+</head>
+<body>
+<h2>رفع ملفات JSON إلى Supabase</h2>
+<p>سجّل الدخول أولًا من login.html ثم ارفع الملفات هنا إن احتجت.</p>
+<input type="file" id="f" accept="application/json"/>
+<input id="cid" placeholder="اسم الشركة مثل الراعي" value="الراعي"/>
+<button id="go">رفع</button>
+<pre id="out"></pre>
+<script>
+AppCloud.init();
+go.onclick = async () => {
+  const session = await AppCloud.getSession();
+  if (!session) { out.textContent = "سجّل الدخول أولًا"; return; }
+  const file = f.files[0]; if (!file) return;
+  const text = await file.text();
+  const data = JSON.parse(text);
+  await AppCloud.saveCompany(cid.value.trim(), data);
+  out.textContent = "تم رفع " + cid.value;
+};
+</script>
+
+<footer class="ay-footer no-print" style="text-align:center;margin:28px 12px 16px;padding:12px 10px;font-size:.72rem;color:#64748b;border-top:1px solid #e2e8f0;line-height:1.6">
+  تصميم وبرمجة د.م/ ايمن زغلول — ت/ 01063188440
+</footer>
+
+</body>
+</html>

@@ -1,0 +1,25 @@
+{
+  "name": "إدارة أبو يونس — اطلاع",
+  "short_name": "إدارة",
+  "start_url": "./admin-mobile.html",
+  "display": "standalone",
+  "orientation": "portrait",
+  "background_color": "#f7f1e6",
+  "theme_color": "#5c4033",
+  "lang": "ar",
+  "dir": "rtl",
+  "icons": [
+    {
+      "src": "logo-abu-younes.jpg",
+      "sizes": "192x192",
+      "type": "image/jpeg",
+      "purpose": "any maskable"
+    },
+    {
+      "src": "logo-abu-younes.jpg",
+      "sizes": "512x512",
+      "type": "image/jpeg",
+      "purpose": "any maskable"
+    }
+  ]
+}

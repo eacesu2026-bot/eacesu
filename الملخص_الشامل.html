@@ -1,0 +1,863 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width,initial-scale=1"/>
+<title>الملخص الشامل — جميع الشركات</title>
+<style>
+:root{--bg:#eef1f6;--s:#fff;--bd:#94a3b8;--t:#0f172a;--m:#334155;--p:#1d4ed8;--g:#15803d;--r:#b91c1c;--c:#0e7490;--o:#c2410c}
+*{box-sizing:border-box;margin:0;padding:0}
+body{font-family:Segoe UI,Tahoma,Arial;background:var(--bg);color:var(--t);padding:20px}
+h1{font-size:1.3rem;margin-bottom:8px} h1 span{color:var(--p)}
+.sub{color:var(--m);font-size:.85rem;margin-bottom:16px}
+.grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(280px,1fr));gap:12px;margin-bottom:18px}
+.card{background:var(--s);border:1px solid var(--bd);border-radius:12px;padding:14px}
+.card h2{font-size:.95rem;margin-bottom:10px;border-bottom:2px solid var(--p);padding-bottom:6px}
+.kpi{display:flex;justify-content:space-between;padding:6px 0;border-bottom:1px solid #e2e8f0;font-size:.85rem}
+.kpi .v{font-weight:700}
+.v-g{color:var(--g)}.v-r{color:var(--r)}.v-b{color:var(--p)}.v-c{color:var(--c)}.v-o{color:var(--o)}
+.tot{background:#1e293b;color:#fff;border-radius:12px;padding:16px;margin-top:12px}
+.tot h2{color:#fff;border-color:#3b82f6}
+.links a{display:inline-block;margin:4px 8px 4px 0;padding:8px 14px;background:var(--p);color:#fff;text-decoration:none;border-radius:8px;font-weight:600;font-size:.85rem}
+table{width:100%;border-collapse:collapse;font-size:.82rem;margin-top:8px}
+th,td{border:1px solid var(--bd);padding:6px 8px;text-align:right}
+th{background:#e2e8f0}
+.form{display:flex;gap:10px;flex-wrap:wrap;margin-bottom:12px;align-items:end}
+label{font-size:.75rem;color:var(--m);display:flex;flex-direction:column;gap:4px}
+select,input{padding:6px 8px;border:1px solid var(--bd);border-radius:6px;font-size:.85rem;color:var(--t)}
+button.btn{background:var(--p);color:#fff;border:0;border-radius:8px;padding:8px 14px;cursor:pointer;font-weight:600}
+.status{font-size:.78rem;color:var(--m);margin-bottom:8px}
+.status.ok{color:var(--g)} .status.err{color:var(--r)}
+@media(max-width:640px){
+  body{padding:10px}
+  .grid{grid-template-columns:1fr!important}
+  table{font-size:.7rem}
+  .form{flex-direction:column}
+}
+@media print {
+  body{background:#fff;padding:8px;color:#000}
+  .form, .links, .no-print, #go, #goMonth, button, .sub, .status{display:none!important}
+  .card{break-inside:avoid;border:1px solid #333;margin-bottom:10px}
+  .tot{background:#eee!important;color:#000!important;-webkit-print-color-adjust:exact;print-color-adjust:exact}
+  .tot h2{color:#000!important;border-color:#333}
+  a{color:#000;text-decoration:none}
+  table{page-break-inside:auto}
+  th{background:#ddd!important}
+  h1{font-size:1.1rem}
+}
+</style>
+<script src="io-tools.js"></script>
+</head>
+<body>
+<h1>الملخص الشامل <span>جميع الشركات</span></h1>
+<p class="no-print" style="font-size:.78rem;color:var(--m);margin-bottom:8px">رصيد الخزنة السابق = رصيد أول المدة + حركات الخزنة قبل بداية الفترة المحددة</p>
+<p class="sub">يعرض ملخص لوحة التحكم لكل شركة + الإجمالي المجمّع · البيانات من localStorage (أحدث حفظ) أو ملفات JSON</p>
+<p class="status no-print" id="status">جاري التحميل…</p>
+<div class="form">
+  <label>السنة<select id="year"></select></label>
+  <label>الشهر<select id="month"></select></label>
+  <label>من تاريخ<input type="date" id="dFrom"/></label>
+  <label>إلى تاريخ<input type="date" id="dTo"/></label>
+  <button class="btn" type="button" id="go">تحديث</button>
+  <button class="btn no-print" type="button" id="btnPrint" style="background:#15803d">طباعة</button>
+  <button class="btn no-print" type="button" id="btnPdf" style="background:#7c3aed">حفظ PDF</button>
+  <button class="btn" type="button" id="goMonth" style="background:#0e7490">حسب الشهر</button>
+  <label>المندوب/المشرف
+    <select id="repFilter"><option value="">الكل</option></select>
+  </label>
+  <span id="periodLabel" style="font-size:.8rem;color:var(--m);align-self:center"></span>
+</div>
+<p class="sub" style="margin-top:-8px">اختر <b>السنة والشهر</b> فيُملأ تلقائيًا من أول يوم لآخر يوم في الشهر · أو عدّل من/إلى يدويًا · الصفحة تُحدَّث تلقائيًا عند العودة إليها بعد تسجيل بيانات</p>
+<div class="links" id="links"></div>
+<div class="grid" id="cards"></div>
+<div class="card tot" id="grand"></div>
+<p class="sub no-print">التفاصيل حسب كل شركة ومناديبها للمراجعة والتقييم · صف أخير: <b>ابويونس للتجارة والتوكيلات</b> كملخص موحّد</p>
+<div class="card" id="repNotesCard" style="margin-top:14px">
+  <h2 style="margin-bottom:8px">تقييم المناديب والشركات — مبيعات · تحصيلات · متبقي عملاء</h2>
+  <div id="repNotes" style="font-size:.8rem;line-height:1.7"></div>
+</div>
+<table>
+<thead><tr>
+  <th>الشركة</th>
+  <th>مبيعات كاش</th>
+  <th>مبيعات آجل</th>
+  <th>إجمالي البيع</th>
+  <th>مرتجعات</th>
+  <th>تحصيل</th>
+  <th>إجمالي الإيرادات</th>
+  <th>أجور</th>
+  <th>مصروفات</th>
+  <th>إجمالي المصروفات</th>
+  <th>صافي حركة الخزنة</th>
+</tr></thead>
+<tbody id="tbl"></tbody>
+</table>
+<script>
+const MONTHS=["يناير","فبراير","مارس","أبريل","مايو","يونيو","يوليو","أغسطس","سبتمبر","أكتوبر","نوفمبر","ديسمبر"];
+const DETAIL_COMPANIES = ["الراعي", "الحموي", "زدنا", "فوليانا", "بسكو مصر"];
+const UNIFIED_COMPANY = "ابويونس للتجارة والتوكيلات";
+const COMPANIES = DETAIL_COMPANIES; // للتفاصيل والتقييم
+
+const SEED_CACHE = {}; // يُملأ من JSON عند الحاجة
+
+
+function normRepName(n){
+  let s=String(n||"").replace(/\s+/g," ").trim();
+  if(!s) return "";
+  s=s.replace(/^(مشرف|مندوب|السائق|سائق)\s*[:：\-]?\s*/u,"").trim();
+  s=s.replace(/[()]/g,"").trim();
+  if(/^\d+([.,]\d+)?$/.test(s)) return "";
+  if(/^[0-9a-f]{8}-[0-9a-f-]{20,}$/i.test(s)) return "";
+  if(/^[0-9a-f]{16,}$/i.test(s)) return "";
+  if(/فهد/.test(s)) return "فهد ابراهيم";
+  if(/مصط+ف[ىي]/.test(s) || /مصطف[ىي]/.test(s)) return "مصطفى محمد فتحي";
+  return s;
+}
+function repJobTitle(n){
+  const u=normRepName(n);
+  if(u==="فهد ابراهيم") return "مشرف";
+  if(u==="مصطفى محمد فتحي") return "مندوب";
+  return "مندوب";
+}
+function displayRepName(n){
+  const u=normRepName(n);
+  if(!u) return "بدون مندوب";
+  return repJobTitle(u)+": "+u;
+}
+function sameRep(a,b){
+  const x=normRepName(a), y=normRepName(b);
+  return !!x && x===y;
+}
+
+function num(v){const n=parseFloat(v);return isNaN(n)?0:n}
+function fmt(n){ const x=num(n); return x.toLocaleString("en-US",{minimumFractionDigits:2,maximumFractionDigits:2}); }
+function lineTotal(q,p,d,da){
+  /* مطابق لصفحات الشركات: الخصم % ثم خصم المبلغ (يُطبَّقان معًا) */
+  const t=num(q)*num(p);
+  return Math.max(0,t-t*(num(d)/100)-num(da));
+}
+function inMonth(ds,y,m){
+  if(!ds) return false;
+  const x=normD(ds);
+  if(!x) return false;
+  const p=x.split("-");
+  return +p[0]===+y && +p[1]===+m;
+}
+function normD(ds){
+  if(!ds) return "";
+  const s=String(ds).trim();
+  let m=s.match(/^(\d{4})-(\d{1,2})-(\d{1,2})/);
+  if(m) return m[1]+"-"+m[2].padStart(2,"0")+"-"+m[3].padStart(2,"0");
+  m=s.match(/^(\d{1,2})[\/\.\-](\d{1,2})[\/\.\-](\d{4})/);
+  if(m){
+    const a=+m[1], b=+m[2], y=m[3];
+    if(a>12) return y+"-"+String(b).padStart(2,"0")+"-"+String(a).padStart(2,"0");
+    if(b>12) return y+"-"+String(a).padStart(2,"0")+"-"+String(b).padStart(2,"0");
+    return y+"-"+String(b).padStart(2,"0")+"-"+String(a).padStart(2,"0");
+  }
+  const d=new Date(s);
+  if(!isNaN(d.getTime())){
+    return d.getFullYear()+"-"+String(d.getMonth()+1).padStart(2,"0")+"-"+String(d.getDate()).padStart(2,"0");
+  }
+  return "";
+}
+function inRange(ds, from, to){
+  if(!ds) return false;
+  const x=normD(ds);
+  if(!x) return false;
+  if(from && x < from) return false;
+  if(to && x > to) return false;
+  return true;
+}
+function score(o){
+  if(!o||typeof o!=="object") return -1;
+  return (o.sales||[]).length + (o.purchases||[]).length + (o.collections||[]).length
+    + (o.payments||[]).length + (o.expenses||[]).length + (o.customerReturns||[]).length
+    + (o.salaries||[]).length + (o.revenues||[]).length;
+}
+function loadUnifiedDB(){
+  const merged={items:[],customers:[],suppliers:[],sales:[],purchases:[],expenses:[],collections:[],payments:[],customerReturns:[],supplierReturns:[],employees:[],salaries:[],revenues:[],checks:[],openCash:0};
+  DETAIL_COMPANIES.forEach(name=>{
+    const db=loadDB(name);
+    ["items","customers","suppliers","sales","purchases","expenses","collections","payments","customerReturns","supplierReturns","employees","salaries","revenues","checks"].forEach(k=>{
+      (db[k]||[]).forEach(x=> merged[k].push(Object.assign({},x,{sourceCo:name})));
+    });
+    merged.openCash += num(db.openCash);
+  });
+  return merged;
+}
+function loadDB(name){
+  if(name===UNIFIED_COMPANY || name==="ابويونس للتجارة والتوكيلات") return loadUnifiedDB();
+
+  const tryKeys = [
+    "acc_abu_"+name+"_v2",
+    "acc_abu_"+name+"_v3",
+    "acc_abu_"+name+"_v4",
+    "acc_abu_"+name,
+    name
+  ];
+  let best=null, bestScore=-1;
+  try{
+    for(const k of tryKeys){
+      const raw=localStorage.getItem(k);
+      if(!raw) continue;
+      try{
+        const o=JSON.parse(raw);
+        const sc=score(o);
+        if(sc>bestScore){ best=o; bestScore=sc; }
+      }catch(e){}
+    }
+    for(let i=0;i<localStorage.length;i++){
+      const k=localStorage.key(i);
+      if(!k || k.indexOf(name)<0) continue;
+      try{
+        const o=JSON.parse(localStorage.getItem(k)||"null");
+        const sc=score(o);
+        if(sc>bestScore){ best=o; bestScore=sc; }
+      }catch(e){}
+    }
+  }catch(e){}
+  if(best && bestScore>0) return best;
+  if(SEED_CACHE[name]) return JSON.parse(JSON.stringify(SEED_CACHE[name]));
+  return {items:[],customers:[],suppliers:[],sales:[],purchases:[],expenses:[],collections:[],payments:[],customerReturns:[],supplierReturns:[],employees:[],salaries:[],revenues:[],checks:[],openCash:0};
+}
+async function loadSeedsFromJson(){
+  const status=document.getElementById("status");
+  let loaded=0;
+  await Promise.all(DETAIL_COMPANIES.map(async name=>{
+    try{
+      const res=await fetch(encodeURI(name+".json")+"?t="+Date.now(), {cache:"no-store"});
+      if(!res.ok) return;
+      const data=await res.json();
+      if(data && typeof data==="object"){
+        SEED_CACHE[name]=data;
+        loaded++;
+      }
+    }catch(e){ console.warn("SEED", name, e); }
+  }));
+  if(status){
+    status.textContent = loaded
+      ? ("جاهز · بذور JSON: "+loaded+"/"+DETAIL_COMPANIES.length+" · يُفضَّل localStorage بعد الحفظ من صفحة الشركة")
+      : "جاهز · يعتمد على localStorage فقط (لم تُحمَّل ملفات JSON)";
+    status.className="status no-print ok";
+  }
+}
+function periodTotals(db, from, to, y, m){
+  const useRange = !!(from || to);
+  const filt = (arr)=> (arr||[]).filter(x=>{
+    if(useRange) return inRange(x.date, from||"", to||"");
+    return inMonth(x.date, y, m);
+  });
+  const sales=filt(db.sales);
+  const col=filt(db.collections);
+  const exp=filt(db.expenses);
+  const sal=filt(db.salaries);
+  const rev=filt(db.revenues);
+  const cr=filt(db.customerReturns);
+  const pays=filt(db.payments||[]);
+  const salesCash=sales.filter(x=>x.pay==="كاش").reduce((a,x)=>a+lineTotal(x.qty,x.price,x.disc,x.discAmt),0);
+  const salesAmt=sales.reduce((a,x)=>a+lineTotal(x.qty,x.price,x.disc,x.discAmt),0);
+  const salesCredit=salesAmt-salesCash;
+  const crAmt=cr.reduce((a,x)=>a+num(x.qty)*num(x.price),0);
+  const colAmt=col.reduce((a,x)=>a+num(x.amt),0);
+  const revAmt=rev.reduce((a,x)=>a+num(x.amt),0);
+  const salAmt=sal.reduce((a,x)=>a+num(x.amt),0);
+  const expOnly=exp.reduce((a,x)=>a+num(x.amt),0);
+  // مدفوعات الموردين (كاش/تحويل) تؤثر على الخزنة
+  const payCash=pays.filter(p=>p.method!=="شيك"&&p.method!=="خصم").reduce((a,x)=>a+num(x.amt),0);
+  // دفعات الشيكات المؤكدة في الفترة
+  let chkPaid=0;
+  (db.checks||[]).forEach(c=>{
+    const hist=c.paidHistory||[];
+    if(hist.length){
+      hist.forEach(e=>{
+        if(useRange){ if(inRange(e.date,from||"",to||"")) chkPaid+=num(e.amt); }
+        else if(inMonth(e.date,y,m)) chkPaid+=num(e.amt);
+      });
+    } else if(c.paid && c.paidDate){
+      if(useRange){ if(inRange(c.paidDate,from||"",to||"")) chkPaid+=num(c.amt); }
+      else if(inMonth(c.paidDate,y,m)) chkPaid+=num(c.amt);
+    }
+  });
+  const supplierOut = payCash + chkPaid;
+  const totalRevenue = salesCash + colAmt + revAmt;
+  // المصروفات التشغيلية + الأجور + مدفوعات الموردين (كل ما يخصم من الخزنة)
+  const totalExpenses = expOnly + salAmt;
+  const cashOut = totalExpenses + supplierOut;
+  const net = totalRevenue - cashOut;
+  // أرصدة حسب تاريخ الفلتر (آخر يوم في الفترة)
+  const asOf = to || (y&&m ? (y+"-"+String(m).padStart(2,"0")+"-"+String(new Date(y,m,0).getDate()).padStart(2,"0")) : "");
+  const arBal = customerARAsOf(db, asOf);
+  const apBal = supplierAPAsOf(db, asOf);
+  const stockVal = stockValueAsOf(db, asOf);
+  return {salesCash,salesCredit,salesAmt,crAmt,colAmt,revAmt,salAmt,expOnly,payCash,chkPaid,supplierOut,totalRevenue,totalExpenses,cashOut,net,arBal,apBal,stockVal};
+}
+function customerARAsOf(db, asOf){
+  let total=0;
+  const map={};
+  (db.customers||[]).forEach(c=>map[c.id]=num(c.openBal));
+  (db.sales||[]).filter(s=>s.pay==="آجل").forEach(s=>{
+    if(asOf && s.date && s.date>asOf) return;
+    map[s.customerId]=(map[s.customerId]||0)+lineTotal(s.qty,s.price,s.disc,s.discAmt);
+  });
+  (db.customerReturns||[]).filter(r=>r.pay!=="كاش").forEach(r=>{
+    if(asOf && r.date && r.date>asOf) return;
+    map[r.customerId]=(map[r.customerId]||0)-num(r.qty)*num(r.price);
+  });
+  (db.collections||[]).forEach(c=>{
+    if(asOf && c.date && c.date>asOf) return;
+    map[c.customerId]=(map[c.customerId]||0)-num(c.amt);
+  });
+  Object.values(map).forEach(v=>{ if(v>0) total+=v; });
+  return total;
+}
+function supplierAPAsOf(db, asOf){
+  const map={};
+  (db.purchases||[]).filter(p=>p.pay!=="بونص").forEach(p=>{
+    if(asOf && p.date && p.date>asOf) return;
+    const k=(p.inv||"")+"|"+(p.supplierId||"");
+    if(!map[k]) map[k]={total:0,paid:0,ret:0};
+    map[k].total+=lineTotal(p.qty,p.price,p.disc,p.discAmt);
+  });
+  (db.supplierReturns||[]).forEach(r=>{
+    if(asOf && r.date && r.date>asOf) return;
+    const k=(r.discInv||r.inv||"")+"|"+(r.supplierId||"");
+    if(!map[k]) map[k]={total:0,paid:0,ret:0};
+    map[k].ret+=num(r.qty)*num(r.price);
+  });
+  (db.payments||[]).forEach(p=>{
+    if(asOf && p.date && p.date>asOf) return;
+    if(p.method==="شيك") return;
+    const k=(p.inv||"")+"|"+(p.supplierId||"");
+    if(!map[k]) map[k]={total:0,paid:0,ret:0};
+    map[k].paid+=num(p.amt);
+  });
+  (db.checks||[]).forEach(c=>{
+    let paidPart=0;
+    if(c.paidHistory&&c.paidHistory.length){
+      paidPart=c.paidHistory.filter(e=>!asOf||!e.date||e.date<=asOf).reduce((a,e)=>a+num(e.amt),0);
+    } else if(c.paid && (!asOf||!c.paidDate||c.paidDate<=asOf)){
+      paidPart=num(c.amt);
+    } else {
+      paidPart=num(c.paidAmt||0);
+    }
+    const k=(c.inv||"")+"|"+(c.supplierId||"");
+    if(!map[k]) return;
+    map[k].paid+=paidPart;
+  });
+  const open=(db.suppliers||[]).reduce((a,s)=>a+num(s.openBal),0);
+  return open+Object.values(map).reduce((a,x)=>a+Math.max(0,x.total-x.ret-x.paid),0);
+}
+function stockValueAsOf(db, asOf){
+  const map={};
+  (db.items||[]).forEach(it=>map[it.id]={open:num(it.openQty),in:0,out:0,inVal:0,cr:0,sr:0});
+  (db.purchases||[]).forEach(p=>{
+    if(asOf && p.date && p.date>asOf) return;
+    if(!map[p.itemId]) map[p.itemId]={open:0,in:0,out:0,inVal:0,cr:0,sr:0};
+    map[p.itemId].in+=num(p.qty);
+    if(p.pay!=="بونص") map[p.itemId].inVal+=lineTotal(p.qty,p.price,p.disc,p.discAmt);
+  });
+  (db.sales||[]).forEach(s=>{
+    if(asOf && s.date && s.date>asOf) return;
+    if(!map[s.itemId]) map[s.itemId]={open:0,in:0,out:0,inVal:0,cr:0,sr:0};
+    map[s.itemId].out+=num(s.qty);
+  });
+  (db.customerReturns||[]).forEach(r=>{
+    if(asOf && r.date && r.date>asOf) return;
+    if(!map[r.itemId]) map[r.itemId]={open:0,in:0,out:0,inVal:0,cr:0,sr:0};
+    map[r.itemId].cr+=num(r.qty);
+  });
+  (db.supplierReturns||[]).forEach(r=>{
+    if(asOf && r.date && r.date>asOf) return;
+    if(!map[r.itemId]) map[r.itemId]={open:0,in:0,out:0,inVal:0,cr:0,sr:0};
+    map[r.itemId].sr+=num(r.qty);
+  });
+  let val=0;
+  Object.values(map).forEach(st=>{
+    const bal=st.open+st.in-st.out+st.cr-st.sr;
+    const avg=st.in>0?st.inVal/st.in:0;
+    val+=bal*avg;
+  });
+  return val;
+}
+function cashBalanceBefore(db, cutoff){
+  if(!cutoff) return num(db.openCash)||0;
+  const before = (arr)=> (arr||[]).filter(x=>{
+    const d=normD(x.date);
+    return d && d < cutoff;
+  });
+  let bal = num(db.openCash)||0;
+  before(db.sales).filter(x=>x.pay==="كاش").forEach(x=>{ bal += lineTotal(x.qty,x.price,x.disc,x.discAmt); });
+  before(db.collections).forEach(x=>{ bal += num(x.amt); });
+  before(db.revenues).forEach(x=>{ bal += num(x.amt); });
+  before(db.expenses).forEach(x=>{ bal -= num(x.amt); });
+  before(db.salaries).forEach(x=>{ bal -= num(x.amt); });
+  before(db.payments||[]).forEach(x=>{
+    if(x.method==="شيك"||x.method==="خصم") return;
+    bal -= num(x.amt);
+  });
+  // دفعات الشيكات قبل الفترة
+  (db.checks||[]).forEach(c=>{
+    const hist=c.paidHistory||[];
+    if(hist.length){
+      hist.forEach(e=>{ if(e.date && e.date < cutoff) bal -= num(e.amt); });
+    } else if(c.paid && c.paidDate && c.paidDate < cutoff){
+      bal -= num(c.amt);
+    }
+  });
+  return bal;
+}
+function periodStartDate(from, to, y, m){
+  if(from) return from;
+  if(y && m) return String(y)+"-"+String(m).padStart(2,"0")+"-01";
+  return "";
+}
+function fillMonthRange(){
+  const y=num(year.value), m=num(month.value);
+  if(!y||!m) return;
+  const last=new Date(y, m, 0).getDate();
+  const df=document.getElementById("dFrom"), dt=document.getElementById("dTo");
+  if(df) df.value=y+"-"+String(m).padStart(2,"0")+"-01";
+  if(dt) dt.value=y+"-"+String(m).padStart(2,"0")+"-"+String(last).padStart(2,"0");
+}
+
+function buildRepNotes(from,to,y,m){
+  const useRange = !!(from || to);
+  const inP = (d)=>{
+    if(useRange) return inRange(d, from||"", to||"");
+    return inMonth(d, y, m);
+  };
+  const repF = (document.getElementById("repFilter")||{}).value || "";
+
+  // company -> metrics
+  const byCo = {};
+  // rep unified -> metrics (across companies)
+  const byRep = {};
+  // company|rep -> metrics
+  const byCoRep = {};
+
+  const allRepSet = new Set();
+  function ensRep(repRaw){
+    const u = normRepName(repRaw) || "بدون مندوب";
+    if(u && u!=="بدون مندوب") allRepSet.add(u);
+    if(repF && u !== repF && !sameRep(u, repF)) return null;
+    if(!byRep[u]) byRep[u] = {sales:0,cash:0,credit:0,col:0,ar:0,count:0,companies:new Set()};
+    return u;
+  }
+  function ensCo(name){
+    if(!byCo[name]) byCo[name]={sales:0,cash:0,credit:0,col:0,ar:0};
+    return byCo[name];
+  }
+  function ensCR(co, rep){
+    const k = co+"||"+rep;
+    if(!byCoRep[k]) byCoRep[k]={co, rep, sales:0,cash:0,credit:0,col:0,ar:0,count:0};
+    return byCoRep[k];
+  }
+
+  DETAIL_COMPANIES.forEach(name=>{
+    const db = loadDB(name);
+    const co = ensCo(name);
+
+    // مبيعات
+    (db.sales||[]).forEach(s=>{
+      if(typeof isRealSale==="function" && !isRealSale(s)) return;
+      if(s.source==="vehicle_load" || String(s.inv||"").indexOf("VL-")===0) return;
+      if(!inP(s.date)) return;
+      const n = lineTotal(s.qty,s.price,s.disc,s.discAmt);
+      const cash = (s.pay==="كاش");
+      co.sales += n;
+      if(cash) co.cash += n; else co.credit += n;
+
+      const u = ensRep(s.rep);
+      if(!u) return;
+      byRep[u].sales += n; byRep[u].count++;
+      if(cash) byRep[u].cash += n; else byRep[u].credit += n;
+      byRep[u].companies.add(name);
+      const cr = ensCR(name, u);
+      cr.sales += n; cr.count++;
+      if(cash) cr.cash += n; else cr.credit += n;
+    });
+
+    // تحصيلات — اربط بالمندوب الأساسي للعميل إن أمكن
+    (db.collections||[]).forEach(c=>{
+      if(!inP(c.date)) return;
+      const amt = num(c.amt);
+      co.col += amt;
+      let repRaw = c.rep || "";
+      if(!repRaw && c.customerId){
+        const sales = (db.sales||[]).filter(s=>s.customerId===c.customerId && s.rep)
+          .slice().sort((a,b)=>String(b.date||"").localeCompare(String(a.date||"")));
+        if(sales.length) repRaw = sales[0].rep;
+      }
+      const u = ensRep(repRaw || "بدون مندوب");
+      if(!u) return;
+      byRep[u].col += amt;
+      byRep[u].companies.add(name);
+      ensCR(name, u).col += amt;
+    });
+
+    // متبقي عملاء (حتى نهاية الفترة)
+    const asOf = (to || (y && m ? (y+"-"+String(m).padStart(2,"0")+"-31") : "")) || "";
+    (db.customers||[]).forEach(cu=>{
+      let ar = 0;
+      try{
+        if(typeof customerARAsOf==="function") ar = customerARAsOf(db, cu.id, asOf);
+        else {
+          ar = num(cu.openBal);
+          (db.sales||[]).forEach(s=>{
+            if(s.customerId!==cu.id) return;
+            if(asOf && String(s.date||"")>asOf) return;
+            if(s.pay!=="كاش") ar += lineTotal(s.qty,s.price,s.disc,s.discAmt);
+          });
+          (db.collections||[]).forEach(c=>{
+            if(c.customerId!==cu.id) return;
+            if(asOf && String(c.date||"")>asOf) return;
+            ar -= num(c.amt);
+          });
+          (db.customerReturns||[]).forEach(r=>{
+            if(r.customerId!==cu.id) return;
+            if(asOf && String(r.date||"")>asOf) return;
+            ar -= num(r.qty)*num(r.price);
+          });
+        }
+      }catch(e){}
+      if(ar<=0.001) return;
+      co.ar += ar;
+      // مندوب العميل من آخر بيع
+      let repRaw="";
+      const sales=(db.sales||[]).filter(s=>s.customerId===cu.id && s.rep)
+        .slice().sort((a,b)=>String(b.date||"").localeCompare(String(a.date||"")));
+      if(sales.length) repRaw=sales[0].rep;
+      const u=ensRep(repRaw||"بدون مندوب");
+      if(!u) return;
+      byRep[u].ar += ar;
+      ensCR(name,u).ar += ar;
+    });
+  });
+
+  // املأ قائمة الفلتر (كل الأسماء الموحّدة)
+  const sel = document.getElementById("repFilter");
+  if(sel){
+    const cur = sel.value || repF;
+    const names = [...allRepSet].sort((a,b)=>displayRepName(a).localeCompare(displayRepName(b),"ar"));
+    sel.innerHTML = ['<option value="">الكل</option>']
+      .concat(names.map(n=>`<option value="${n}">${displayRepName(n)}</option>`)).join("");
+    if(cur) sel.value = cur;
+  }
+
+  const el = document.getElementById("repNotes");
+  if(!el) return;
+
+  const block = (title, x, extra)=>`
+    <div style="padding:8px 10px;margin:6px 0;border:1px solid #e2e8f0;border-radius:10px;background:#fff">
+      <b>${title}</b>
+      <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(140px,1fr));gap:6px;margin-top:6px">
+        <div>بيع كاش: <b style="color:#15803d">${fmt(x.cash||0)}</b></div>
+        <div>بيع آجل: <b style="color:#1d4ed8">${fmt(x.credit||0)}</b></div>
+        <div>إجمالي بيع: <b>${fmt(x.sales||0)}</b></div>
+        <div>تحصيلات: <b style="color:#0e7490">${fmt(x.col||0)}</b></div>
+        <div>متبقي عملاء: <b style="color:#b91c1c">${fmt(x.ar||0)}</b></div>
+        ${extra||""}
+      </div>
+    </div>`;
+
+  let html = "";
+
+  // 1) إجمالي كل شركة
+  html += `<h3 style="margin:12px 0 6px;color:#1e3a5f">١) إجمالي كل شركة</h3>`;
+  DETAIL_COMPANIES.forEach(name=>{
+    const x = byCo[name] || {sales:0,cash:0,credit:0,col:0,ar:0};
+    html += block("الشركة: "+name, x);
+  });
+
+  // 2) إجمالي كل مندوب عبر الشركات
+  html += `<h3 style="margin:14px 0 6px;color:#1e3a5f">٢) إجمالي كل مندوب / مشرف (كل الشركات)</h3>`;
+  const repNames = Object.keys(byRep).sort((a,b)=>(byRep[b].sales||0)-(byRep[a].sales||0));
+  if(!repNames.length){
+    html += `<div class="muted">لا بيانات مندوبين في الفترة</div>`;
+  } else {
+    repNames.forEach(rep=>{
+      const x=byRep[rep];
+      const cos=[...x.companies].join(" · ")||"—";
+      html += block(displayRepName(rep), x, `<div>الشركات: ${cos}</div><div>فواتير: ${x.count||0}</div>`);
+    });
+  }
+
+  // 3) مندوب داخل كل شركة
+  html += `<h3 style="margin:14px 0 6px;color:#1e3a5f">٣) المندوب داخل كل شركة</h3>`;
+  DETAIL_COMPANIES.forEach(name=>{
+    const rows = Object.values(byCoRep).filter(r=>r.co===name && (r.sales||r.col||r.ar));
+    if(!rows.length){
+      html += `<div class="muted" style="margin:4px 0 8px">• ${name}: لا حركة مناديب في الفترة</div>`;
+      return;
+    }
+    html += `<div style="margin:8px 0 4px;font-weight:700;color:#334155">▸ ${name}</div>`;
+    rows.sort((a,b)=>(b.sales||0)-(a.sales||0)).forEach(r=>{
+      html += block(displayRepName(r.rep)+" — "+name, r, `<div>فواتير: ${r.count||0}</div>`);
+    });
+  });
+
+
+  // ٤) ملخص الشركة الموحّدة
+  try{
+    const udb=loadUnifiedDB();
+    const from2=from, to2=to, y2=y, m2=m;
+    let cash=0,credit=0,sales=0,col=0;
+    (udb.sales||[]).forEach(s=>{
+      if(s.source==="vehicle_load"||String(s.inv||"").indexOf("VL-")===0) return;
+      const useRange=!!(from2||to2);
+      const ok=useRange?inRange(s.date,from2||"",to2||""):inMonth(s.date,y2,m2);
+      if(!ok) return;
+      const n=lineTotal(s.qty,s.price,s.disc,s.discAmt);
+      sales+=n;
+      if(s.pay==="كاش") cash+=n; else credit+=n;
+    });
+    (udb.collections||[]).forEach(c=>{
+      const useRange=!!(from2||to2);
+      const ok=useRange?inRange(c.date,from2||"",to2||""):inMonth(c.date,y2,m2);
+      if(ok) col+=num(c.amt);
+    });
+    html += `<h3 style="margin:14px 0 6px;color:#1e3a5f">٤) ابويونس للتجارة والتوكيلات — ملخص موحّد</h3>`;
+    html += `<div style="padding:10px;border:2px solid #1e3a5f;border-radius:10px;background:#f8fafc">
+      <b>ابويونس للتجارة والتوكيلات</b>
+      <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(140px,1fr));gap:6px;margin-top:6px">
+        <div>بيع كاش: <b style="color:#15803d">${fmt(cash)}</b></div>
+        <div>بيع آجل: <b style="color:#1d4ed8">${fmt(credit)}</b></div>
+        <div>إجمالي بيع: <b>${fmt(sales)}</b></div>
+        <div>تحصيلات: <b style="color:#0e7490">${fmt(col)}</b></div>
+      </div>
+      <div class="muted" style="margin-top:6px;font-size:.72rem">ملخص مجمّع من الشركات الخمس — التفاصيل أعلاه للمراجعة والتقييم</div>
+    </div>`;
+  }catch(e){}
+
+    el.innerHTML = html;
+}
+
+
+function render(){
+  const y=num(year.value), m=num(month.value);
+  const from = (document.getElementById("dFrom")||{}).value || "";
+  const to = (document.getElementById("dTo")||{}).value || "";
+  const useRange = !!(from || to);
+  let g={salesCash:0,salesCredit:0,salesAmt:0,crAmt:0,colAmt:0,revAmt:0,salAmt:0,expOnly:0,payCash:0,chkPaid:0,supplierOut:0,totalRevenue:0,totalExpenses:0,cashOut:0,net:0,prevCash:0,arBal:0,apBal:0,stockVal:0};
+  cards.innerHTML=""; tbl.innerHTML="";
+  const pl = document.getElementById("periodLabel");
+  if(pl) pl.textContent = useRange ? ("الفترة: " + (from||"…") + " → " + (to||"…")) : ("الشهر: " + (MONTHS[m-1]||"") + " " + y);
+  DETAIL_COMPANIES.forEach(name=>{
+    const db=loadDB(name);
+    const t=periodTotals(db, from, to, y, m);
+    const start = periodStartDate(from, to, y, m);
+    const prevCash = cashBalanceBefore(db, start);
+    g.salesCash += num(t.salesCash);
+    g.salesCredit += num(t.salesCredit);
+    g.salesAmt += num(t.salesAmt);
+    g.crAmt += num(t.crAmt);
+    g.colAmt += num(t.colAmt);
+    g.revAmt += num(t.revAmt);
+    g.salAmt += num(t.salAmt);
+    g.expOnly += num(t.expOnly);
+    g.totalRevenue += num(t.totalRevenue);
+    g.totalExpenses += num(t.totalExpenses);
+    g.payCash += num(t.payCash);
+    g.chkPaid += num(t.chkPaid);
+    g.supplierOut += num(t.supplierOut);
+    g.cashOut += num(t.cashOut);
+    g.net += num(t.net);
+    g.prevCash += num(prevCash);
+    g.arBal += num(t.arBal);
+    g.apBal += num(t.apBal);
+    g.stockVal += num(t.stockVal);
+    cards.innerHTML+=`<div class="card"><h2>${name}</h2>
+      <div class="kpi" style="background:#f0f9ff;border-radius:6px;padding:8px;margin-bottom:6px;border:1px solid #bae6fd"><span><b>رصيد الخزنة السابق</b> <span style="font-size:.72rem;color:var(--m)">(قبل الفترة)</span></span><span class="v v-c">${fmt(prevCash)}</span></div>
+      <div class="kpi"><span>مبيعات كاش</span><span class="v v-g">${fmt(t.salesCash)}</span></div>
+      <div class="kpi"><span>مبيعات آجل</span><span class="v v-b">${fmt(t.salesCredit)}</span></div>
+      <div class="kpi"><span>إجمالي البيع</span><span class="v v-b">${fmt(t.salesAmt)}</span></div>
+      <div class="kpi"><span>مرتجعات</span><span class="v v-r">${fmt(t.crAmt)}</span></div>
+      <div class="kpi"><span>تحصيل</span><span class="v v-c">${fmt(t.colAmt)}</span></div>
+      <div class="kpi" style="background:#f0fdf4;border-radius:6px;padding:6px 0;margin:4px 0"><span><b>إجمالي الإيرادات</b> <span style="font-size:.7rem;color:var(--m)">(كاش+تحصيل+أخرى)</span></span><span class="v v-g">${fmt(t.totalRevenue)}</span></div>
+      <div class="kpi"><span>أجور</span><span class="v v-o">${fmt(t.salAmt)}</span></div>
+      <div class="kpi"><span>مصروفات</span><span class="v v-o">${fmt(t.expOnly)}</span></div>
+      <div class="kpi" style="background:#fff7ed;border-radius:6px;padding:6px 0;margin:4px 0"><span><b>إجمالي المصروفات</b> <span style="font-size:.7rem;color:var(--m)">(مصروفات+أجور)</span></span><span class="v v-o">${fmt(t.totalExpenses)}</span></div>
+      <div class="kpi"><span>صافي حركة الخزنة</span><span class="v">${fmt(t.net)}</span></div>
+      <div style="margin-top:8px"><a class="no-print" href="حسابات_${name}.html" style="color:var(--p);font-weight:600">فتح الشركة ←</a></div>
+    
+      <div class="kpi"><span>مدفوعات الموردين (كاش/تحويل)</span><span class="v v-r">${fmt(t.payCash)}</span></div>
+      <div class="kpi"><span>سداد شيكات</span><span class="v v-r">${fmt(t.chkPaid)}</span></div>
+      <div class="kpi" style="background:#fef2f2;border-radius:6px;padding:6px 0;margin:4px 0"><span><b>إجمالي مدفوعات الموردين</b></span><span class="v v-r">${fmt(t.supplierOut)}</span></div>
+      <div class="kpi"><span>أرصدة العملاء (حسب الفلتر)</span><span class="v v-b">${fmt(t.arBal)}</span></div>
+      <div class="kpi"><span>متبقي الموردين (حسب الفلتر)</span><span class="v v-o">${fmt(t.apBal)}</span></div>
+      <div class="kpi"><span>قيمة المخزون (حسب الفلتر)</span><span class="v v-c">${fmt(t.stockVal)}</span></div>
+    </div>`;
+    tbl.innerHTML+=`<tr>
+      <td><b>${name}</b></td>
+      <td>${fmt(t.salesCash)}</td>
+      <td>${fmt(t.salesCredit)}</td>
+      <td>${fmt(t.salesAmt)}</td>
+      <td>${fmt(t.crAmt)}</td>
+      <td>${fmt(t.colAmt)}</td>
+      <td><b>${fmt(t.totalRevenue)}</b></td>
+      <td>${fmt(t.salAmt)}</td>
+      <td>${fmt(t.expOnly)}</td>
+      <td><b>${fmt(t.totalExpenses)}</b></td>
+      <td>${fmt(t.net)}</td>
+    </tr>`;
+  });
+  
+  try{
+    const udb = loadUnifiedDB();
+    const u = periodTotals(udb, from, to, y, m);
+    tbl.innerHTML += `<tr style="background:#1e3a5f;color:#f8fafc;font-weight:800">
+      <td>ابويونس للتجارة والتوكيلات (ملخص موحّد)</td>
+      <td>${fmt(u.salesCash)}</td>
+      <td>${fmt(u.salesCredit)}</td>
+      <td>${fmt(u.salesAmt)}</td>
+      <td>${fmt(u.crAmt)}</td>
+      <td>${fmt(u.colAmt)}</td>
+      <td><b>${fmt(u.totalRevenue)}</b></td>
+      <td>${fmt(u.salAmt)}</td>
+      <td>${fmt(u.expOnly)}</td>
+      <td><b>${fmt(u.totalExpenses)}</b></td>
+      <td>${fmt(u.net)}</td>
+    </tr>`;
+  }catch(e){ console.warn("unified row", e); }
+
+  tbl.innerHTML+=`<tr style="background:#e2e8f0;font-weight:700">
+    <td>الإجمالي</td>
+    <td>${fmt(g.salesCash)}</td><td>${fmt(g.salesCredit)}</td><td>${fmt(g.salesAmt)}</td>
+    <td>${fmt(g.crAmt)}</td><td>${fmt(g.colAmt)}</td><td>${fmt(g.totalRevenue)}</td>
+    <td>${fmt(g.salAmt)}</td><td>${fmt(g.expOnly)}</td><td>${fmt(g.totalExpenses)}</td>
+    <td>${fmt(g.net)}</td>
+  </tr>`;
+  grand.innerHTML=`<h2>الإجمالي المجمّع — ${useRange ? ((from||"…")+" → "+(to||"…")) : ((MONTHS[m-1]||"")+" "+y)}</h2>
+    <div class="kpi" style="background:rgba(14,116,144,.15);border-radius:6px;padding:8px;margin-bottom:6px"><span><b>إجمالي أرصدة الخزنة السابقة</b></span><span class="v v-c">${fmt(g.prevCash)}</span></div>
+    <div class="kpi"><span>مبيعات كاش</span><span class="v v-g">${fmt(g.salesCash)}</span></div>
+    <div class="kpi"><span>مبيعات آجل</span><span class="v">${fmt(g.salesCredit)}</span></div>
+    <div class="kpi"><span>إجمالي البيع</span><span class="v">${fmt(g.salesAmt)}</span></div>
+    <div class="kpi"><span>مرتجعات عملاء</span><span class="v v-r">${fmt(g.crAmt)}</span></div>
+    <div class="kpi"><span>تحصيل</span><span class="v v-c">${fmt(g.colAmt)}</span></div>
+    <div class="kpi" style="background:rgba(21,128,61,.2);border-radius:6px;padding:8px;margin:4px 0"><span><b>إجمالي الإيرادات (كاش+تحصيل+أخرى)</b></span><span class="v v-g">${fmt(g.totalRevenue)}</span></div>
+    <div class="kpi"><span>أجور</span><span class="v v-o">${fmt(g.salAmt)}</span></div>
+    <div class="kpi"><span>مصروفات</span><span class="v v-o">${fmt(g.expOnly)}</span></div>
+    <div class="kpi" style="background:rgba(194,65,12,.2);border-radius:6px;padding:8px;margin:4px 0"><span><b>إجمالي المصروفات (مصروفات+أجور)</b></span><span class="v v-o">${fmt(g.totalExpenses)}</span></div>
+    <div class="kpi"><span>صافي حركة الخزنة (إيرادات − مصروفات)</span><span class="v">${fmt(g.net)}</span></div>
+    
+    <div class="kpi"><span>مدفوعات الموردين (كاش/تحويل)</span><span class="v v-r">${fmt(g.payCash)}</span></div>
+    <div class="kpi"><span>سداد شيكات</span><span class="v v-r">${fmt(g.chkPaid)}</span></div>
+    <div class="kpi" style="background:rgba(185,28,28,.2);border-radius:6px;padding:8px;margin:4px 0"><span><b>إجمالي مدفوعات الموردين</b></span><span class="v v-r">${fmt(g.supplierOut)}</span></div>
+    <div class="kpi"><span>أرصدة العملاء</span><span class="v v-b">${fmt(g.arBal)}</span></div>
+    <div class="kpi"><span>متبقي الموردين</span><span class="v v-o">${fmt(g.apBal)}</span></div>
+    <div class="kpi"><span>قيمة المخزون</span><span class="v v-c">${fmt(g.stockVal)}</span></div>
+<p style="font-size:.75rem;opacity:.85;margin-top:8px">الإجمالي = مجموع بطاقات الشركات الأربع · يُحدَّث تلقائيًا عند العودة للصفحة</p>`;
+  try{ buildRepNotes(from,to,y,m); }catch(e){ console.warn(e); }
+}
+
+const year=document.getElementById("year");
+const month=document.getElementById("month");
+const cards=document.getElementById("cards");
+const tbl=document.getElementById("tbl");
+const grand=document.getElementById("grand");
+const go=document.getElementById("go");
+const links=document.getElementById("links");
+
+const now=new Date();
+year.innerHTML=[2025,2026,2027].map(y=>`<option value="${y}" ${y===now.getFullYear()?"selected":""}>${y}</option>`).join("");
+month.innerHTML=MONTHS.map((n,i)=>`<option value="${i+1}" ${i===now.getMonth()?"selected":""}>${n}</option>`).join("");
+links.innerHTML=DETAIL_COMPANIES.map(n=>`<a href="حسابات_${n}.html">${n}</a>`).join("")+`<a href="حسابات_ابويونس_للتجارة_والتوكيلات.html">ابويونس للتجارة والتوكيلات</a>`+`<a href="login.html" style="background:#334155">دخول سحابي</a>`;
+go.onclick=()=>render();
+(function(){
+  document.addEventListener("visibilitychange", function(){ if(!document.hidden) try{ render(); }catch(e){} });
+  window.addEventListener("focus", function(){ try{ render(); }catch(e){} });
+  setInterval(function(){ try{ render(); }catch(e){} }, 60000);
+})();
+const btnPrint=document.getElementById("btnPrint");
+if(btnPrint) btnPrint.onclick=()=>window.print();
+const goMonthBtn=document.getElementById("goMonth");
+if(goMonthBtn) goMonthBtn.onclick=()=>{ fillMonthRange(); render(); };
+["dFrom","dTo"].forEach(id=>{
+  const el=document.getElementById(id);
+  if(el) el.addEventListener("change", ()=>render());
+});
+["year","month"].forEach(id=>{
+  const el=document.getElementById(id);
+  if(el) el.addEventListener("change", ()=>{ fillMonthRange(); render(); });
+});
+// تحديث تلقائي عند العودة للصفحة (بعد تسجيل بيانات في شركة)
+document.addEventListener("visibilitychange", ()=>{ if(!document.hidden) render(); });
+window.addEventListener("focus", ()=>render());
+window.addEventListener("storage", ()=>render()); // تحديث إن تغيّر localStorage من تبويب آخر
+
+fillMonthRange();
+loadSeedsFromJson().then(()=>render()).catch(()=>render());
+</script>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"></script>
+<script>
+(function(){
+  function bindPdf(){
+    var btnPrint=document.getElementById("btnPrint");
+    if(btnPrint && !btnPrint.dataset.bound){
+      btnPrint.onclick=function(){ window.print(); };
+      btnPrint.dataset.bound="1";
+    }
+    var btnPdf=document.getElementById("btnPdf");
+    if(btnPdf && !btnPdf.dataset.bound){
+      btnPdf.onclick=function(){
+        try{
+          if(typeof html2pdf==="undefined"){
+            alert("اختر في نافذة الطباعة: الطابعة = «حفظ كـ PDF» أو Save as PDF");
+            window.print();
+            return;
+          }
+          var y=(document.getElementById("year")||{}).value||"";
+          var m=(document.getElementById("month")||{}).value||"";
+          var from=(document.getElementById("dFrom")||{}).value||"";
+          var to=(document.getElementById("dTo")||{}).value||"";
+          var name="ملخص_شامل";
+          if(from||to) name+="_"+((from||"")+"_"+(to||""));
+          else name+="_"+y+"_"+m;
+          name+=".pdf";
+          var opt={
+            margin:[8,8,8,8],
+            filename:name,
+            image:{type:"jpeg",quality:0.96},
+            html2canvas:{scale:2,useCORS:true,scrollY:0},
+            jsPDF:{unit:"mm",format:"a4",orientation:"portrait"},
+            pagebreak:{mode:["avoid-all","css","legacy"]}
+          };
+          btnPdf.disabled=true;
+          btnPdf.textContent="جاري إنشاء PDF…";
+          html2pdf().set(opt).from(document.body).save().then(function(){
+            btnPdf.disabled=false;
+            btnPdf.textContent="حفظ PDF";
+          }).catch(function(){
+            btnPdf.disabled=false;
+            btnPdf.textContent="حفظ PDF";
+            alert("تعذر إنشاء PDF — استخدم طباعة ثم «حفظ كـ PDF»");
+            window.print();
+          });
+        }catch(e){
+          console.error(e);
+          alert("استخدم زر طباعة ثم اختر حفظ كـ PDF");
+          window.print();
+        }
+      };
+      btnPdf.dataset.bound="1";
+    }
+  }
+  if(document.readyState==="loading")
+    document.addEventListener("DOMContentLoaded", function(){ setTimeout(bindPdf, 200); });
+  else setTimeout(bindPdf, 200);
+})();
+</script>
+<script>
+document.addEventListener("DOMContentLoaded",function(){
+  try{ if(window.AY_IO) AY_IO.injectToolbar({fileName:"الملخص_الشامل",pdfName:"الملخص_الشامل"}); }catch(e){}
+});
+</script>
+
+<footer class="ay-footer no-print" style="text-align:center;margin:28px 12px 16px;padding:12px 10px;font-size:.72rem;color:#64748b;border-top:1px solid #e2e8f0;line-height:1.6">
+  تصميم وبرمجة د.م/ ايمن زغلول — ت/ 01063188440
+</footer>
+
+</body>
+</html>

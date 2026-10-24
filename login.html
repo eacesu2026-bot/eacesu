@@ -1,0 +1,73 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,viewport-fit=cover"/>
+<meta name="theme-color" content="#5c4033"/>
+<title>دخول الإدارة — أبو يونس</title>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<script src="config.js"></script>
+<style>
+:root{--brown:#5c4033;--cream:#f7f1e6;--bd:#d4c4a8;--t:#3d2b22;--gold:#8b7355}
+*{box-sizing:border-box;margin:0;padding:0}
+body{font-family:Segoe UI,Tahoma,Arial;background:var(--cream);color:var(--t);min-height:100vh;display:flex;align-items:center;justify-content:center;padding:16px}
+.card{background:#fffdf9;border:1px solid var(--bd);border-radius:16px;padding:22px;width:100%;max-width:400px;box-shadow:0 8px 28px rgba(92,64,51,.1)}
+img{width:100%;border-radius:10px;margin-bottom:12px}
+h1{font-size:1.1rem;margin-bottom:4px;text-align:center}
+.sub{font-size:.75rem;color:var(--gold);text-align:center;margin-bottom:14px}
+label{display:block;font-size:.75rem;color:var(--gold);margin:10px 0 4px}
+input{width:100%;padding:12px;border:1px solid var(--bd);border-radius:10px;font-size:.95rem}
+button{width:100%;margin-top:14px;padding:12px;border:0;border-radius:10px;background:var(--brown);color:#f7f1e6;font-weight:700;font-size:.95rem;cursor:pointer}
+.msg{font-size:.8rem;margin-top:10px;min-height:1.2em;text-align:center}
+.msg.err{color:#b91c1c}.msg.ok{color:#15803d}
+a.back{display:block;text-align:center;margin-top:12px;font-size:.8rem;color:var(--gold)}
+.note{font-size:.72rem;color:#8b7355;margin-top:12px;line-height:1.5;text-align:center}
+</style>
+</head>
+<body>
+<div class="card">
+  <img src="logo-abu-younes.jpg" alt="أبو يونس"/>
+  <h1>دخول <span style="color:var(--brown)">الإدارة</span></h1>
+  <p class="sub">الشركات · الملخص · المندوبون · السحابة</p>
+  <label>البريد</label>
+  <input type="email" id="email" autocomplete="username" placeholder="admin@email.com"/>
+  <label>كلمة المرور</label>
+  <input type="password" id="pass" autocomplete="current-password"/>
+  <button type="button" id="btn">دخول</button>
+  <div class="msg" id="msg"></div>
+  <p class="note">بدون سحابة يمكنك فتح الشركات من الصفحة الرئيسية والعمل محليًا.<br/>مع السحابة تُزامَن البيانات بين الأجهزة.</p>
+  <a class="back" href="index.html">← رجوع</a>
+</div>
+<script>
+const next = new URLSearchParams(location.search).get("next") || "admin-home.html";
+function init(){
+  const url=(window.SUPABASE_URL||"").trim();
+  const key=(window.SUPABASE_ANON_KEY||"").trim();
+  if(!url||!key) throw new Error("اضبط config.js");
+  return supabase.createClient(url,key,{auth:{persistSession:true,autoRefreshToken:true}});
+}
+(async()=>{
+  try{
+    const sb=init();
+    const {data}=await sb.auth.getSession();
+    if(data.session) location.href=next;
+  }catch(e){}
+})();
+btn.onclick=async()=>{
+  msg.className="msg"; msg.textContent="جاري الدخول...";
+  try{
+    const sb=init();
+    const {error}=await sb.auth.signInWithPassword({email:email.value.trim(),password:pass.value});
+    if(error) throw error;
+    msg.className="msg ok"; msg.textContent="تم — جاري التحويل";
+    location.href=next;
+  }catch(e){ msg.className="msg err"; msg.textContent=e.message||String(e); }
+};
+</script>
+
+<footer class="ay-footer no-print" style="text-align:center;margin:28px 12px 16px;padding:12px 10px;font-size:.72rem;color:#64748b;border-top:1px solid #e2e8f0;line-height:1.6">
+  تصميم وبرمجة د.م/ ايمن زغلول — ت/ 01063188440
+</footer>
+
+</body>
+</html>

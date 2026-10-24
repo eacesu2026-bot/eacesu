@@ -1,0 +1,3111 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no"/>
+<meta name="apple-mobile-web-app-capable" content="yes"/>
+<meta name="apple-mobile-web-app-title" content="مندوب أبو يونس"/>
+<link rel="manifest" href="manifest-rep.json"/>
+<meta name="theme-color" content="#0b1220"/>
+<title>تطبيق المندوب</title>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<script src="company_seeds.js"></script>
+<script src="config.js"></script>
+<script src="io-tools.js"></script>
+<script src="notify.js"></script>
+<script src="https://unpkg.com/html5-qrcode@2.3.8/html5-qrcode.min.js"></script>
+<style>
+:root{--bg:#0b1220;--s:#121a2b;--s2:#1a2438;--bd:#2a364d;--t:#eef3fb;--m:#94a3b8;--p:#3b82f6;--g:#22c55e;--r:#ef4444;--o:#f59e0b}
+*{box-sizing:border-box;margin:0;padding:0;-webkit-tap-highlight-color:transparent}
+body{font-family:Segoe UI,Tahoma,Arial;background:var(--bg);color:var(--t);min-height:100vh;padding-bottom:72px}
+.top{position:sticky;top:0;z-index:20;background:var(--s);border-bottom:1px solid var(--bd);padding:10px 12px;display:flex;justify-content:space-between;align-items:center;gap:8px}
+.top h1{font-size:.95rem}.top h1 span{color:var(--p)}
+.badge{font-size:.68rem;padding:3px 8px;border-radius:999px;background:var(--s2);border:1px solid var(--bd);color:var(--m)}
+.badge.on{border-color:var(--g);color:var(--g)}.badge.warn{border-color:var(--o);color:var(--o)}
+.tabs{display:flex;gap:4px;padding:8px;background:var(--s);border-bottom:1px solid var(--bd);overflow-x:auto;position:sticky;top:46px;z-index:19}
+.tabs button{flex:1;min-width:64px;padding:10px 4px;border:0;border-radius:10px;background:transparent;color:var(--m);font-size:.72rem;font-weight:600;cursor:pointer}
+.tabs button.on{background:var(--p);color:#fff}
+#appView .pane{display:none!important;padding:12px}
+#appView .pane.on{display:block!important}
+.pane{display:none;padding:12px}.pane.on{display:block}
+.data-status{font-size:.68rem;color:var(--m);padding:6px 10px;background:var(--s2);border-radius:8px;margin:0 8px 8px;border:1px solid var(--bd)}
+.data-status.ok{color:var(--g);border-color:var(--g)}
+.data-status.warn{color:var(--o);border-color:var(--o)}
+.card{background:var(--s);border:1px solid var(--bd);border-radius:14px;padding:14px;margin-bottom:12px}
+.card h2{font-size:.9rem;margin-bottom:10px}
+label{display:block;font-size:.72rem;color:var(--m);margin:8px 0 4px}
+input,select,textarea{width:100%;padding:11px 12px;border-radius:10px;border:1px solid var(--bd);background:var(--s2);color:var(--t);font-size:.9rem}
+textarea{min-height:70px;resize:vertical}
+.btn{display:inline-block;width:100%;padding:12px;border:0;border-radius:10px;background:var(--p);color:#fff;font-weight:700;font-size:.9rem;cursor:pointer;margin-top:10px;text-align:center}
+.btn.g{background:var(--g)}.btn.o{background:var(--o)}.btn.r{background:var(--r)}.btn.ghost{background:var(--s2);border:1px solid var(--bd);color:var(--t)}
+.row{display:grid;grid-template-columns:1fr 1fr;gap:8px}
+.msg{font-size:.78rem;margin-top:8px;min-height:1.2em}.msg.ok{color:var(--g)}.msg.err{color:var(--r)}
+.list-item{padding:10px;border-bottom:1px solid var(--bd);font-size:.82rem}
+.muted{color:var(--m);font-size:.72rem}
+.kpi-row{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:12px}
+.kpi{background:var(--s2);border-radius:12px;padding:12px;text-align:center}
+.kpi .l{font-size:.68rem;color:var(--m)}.kpi .v{font-size:1.1rem;font-weight:700;margin-top:4px}
+.login-wrap{max-width:400px;margin:40px auto;padding:16px}
+.gps{font-size:.72rem;color:var(--m);margin-top:6px}.gps.ok{color:var(--g)}
+table{width:100%;border-collapse:collapse;font-size:.75rem}
+th,td{border-bottom:1px solid var(--bd);padding:6px 4px;text-align:right}
+th{color:var(--m)}
+.st-pending{color:var(--o)}.st-approved{color:var(--g)}.st-rejected{color:var(--r)}.st-edited{color:var(--p)}
+.notif-panel{position:fixed;inset:0;background:rgba(0,0,0,.55);z-index:50;display:none;align-items:flex-start;justify-content:center;padding:20px}
+.notif-panel.open{display:flex}
+.notif-box{background:var(--s);border:1px solid var(--bd);border-radius:14px;width:100%;max-width:420px;max-height:80vh;overflow:auto;padding:14px;margin-top:40px}
+.notif-item{padding:10px;border-bottom:1px solid var(--bd);font-size:.82rem}
+.notif-item.unread{background:rgba(59,130,246,.12)}
+.bell{position:relative;background:var(--s2);border:1px solid var(--bd);color:var(--t);border-radius:8px;padding:6px 10px;cursor:pointer}
+.bell .dot{position:absolute;top:2px;left:2px;width:8px;height:8px;background:var(--r);border-radius:50%;display:none}
+.bell .dot.on{display:block}
+.badge.off{border-color:var(--r);color:var(--r)}
+.badge.sync{border-color:var(--o);color:var(--o)}
+.q-list{font-size:.78rem;margin-top:8px}
+.q-list div{padding:6px 0;border-bottom:1px solid var(--bd)}
+.btn-print{background:#64748b!important;margin-top:8px}
+.toolbar-print{display:flex;gap:8px;flex-wrap:wrap;margin-bottom:10px}
+.filter-bar{display:grid;grid-template-columns:1fr 1fr auto;gap:8px;margin-bottom:10px;align-items:end}
+.filter-bar label{margin:0}
+
+/* فاتورة حرارية 75مم */
+.inv-print,.inv-sheet-print{max-width:75mm!important;width:75mm!important;box-sizing:border-box}
+.inv-h1{font-size:14px!important;font-weight:800;text-align:center;margin:0 0 2px}
+.inv-h2{font-size:12px!important;text-align:center;margin:0 0 4px;font-weight:700}
+.inv-reg{font-size:8px!important;text-align:center;margin:2px 0}
+.inv-meta-grid{font-size:9px!important}
+.inv-table{font-size:9px!important;width:100%}
+.inv-table th,.inv-table td{padding:1px 2px!important}
+.inv-total{font-size:11px!important;font-weight:800;text-align:center;margin-top:4px}
+.inv-disclaimer{font-size:7px!important;text-align:center;margin-top:4px}
+.inv-brand,.inv-sub{display:none!important} /* إخفاء الرأس الثابت القديم */
+
+@media print{
+  body{background:#fff!important;color:#000!important;padding:0!important}
+  .top,.tabs,.bell,.side-toggle,.btn,.btn-print,.toolbar-print,.filter-bar,
+  #bellBtn,#gpsBadge,#netBadge,#qBadge,#coSelect,button,.no-print,.notif-panel{display:none!important}
+  #appView .pane{display:none!important}
+  #appView .pane.print-target{display:block!important;padding:0!important}
+  .pane{display:none!important}
+  .pane.print-target{display:block!important;padding:0!important}
+  .card{border:1px solid #333!important;box-shadow:none!important;break-inside:avoid;background:#fff!important;color:#000!important}
+  .card h2,table,td,th,label,.muted,.kpi .l,.kpi .v{color:#000!important}
+  table th{background:#eee!important}
+  .print-only{display:block!important}
+  .print-header{display:block!important;margin-bottom:12px;border-bottom:2px solid #000;padding-bottom:8px}
+}
+.print-only{display:none}
+.print-header{display:none}
+
+
+
+.inv-print{display:none;background:#fff;color:#000;padding:6px;max-width:75mm;width:75mm;margin:0 auto;font-family:Tahoma,Arial,sans-serif}
+
+.inv-print{display:none;background:#fff;color:#000;padding:4px;max-width:75mm;width:75mm;margin:0 auto;font-family:"Courier New",Tahoma,monospace}
+.inv-sheet-print{width:100%;text-align:center;color:#000;font-size:11px;line-height:1.35}
+.inv-sheet-print .inv-h1{font-size:13px;font-weight:800;margin:0 0 4px;letter-spacing:0}
+.inv-sheet-print .inv-h2{font-size:12px;font-weight:700;margin:6px 0 2px}
+.inv-sheet-print .inv-reg{font-size:9px;margin:2px 0 6px}
+.inv-sheet-print .inv-dash{border:none;border-top:1px dashed #000;margin:6px 0}
+.inv-sheet-print .inv-meta-grid{display:flex;justify-content:space-between;gap:4px;text-align:right;font-size:10px;margin:4px 0}
+.inv-sheet-print .inv-col-r,.inv-sheet-print .inv-col-l{flex:1;text-align:right}
+.inv-sheet-print .lbl{font-weight:700}
+.inv-sheet-print .inv-table{width:100%;border-collapse:collapse;font-size:9px;margin:6px 0}
+.inv-sheet-print .inv-table th,.inv-sheet-print .inv-table td{border:1px solid #000;padding:2px 3px;text-align:center}
+.inv-sheet-print .inv-table th{font-weight:700;background:#f3f3f3}
+.inv-sheet-print .inv-table td:first-child{text-align:right}
+.inv-sheet-print .inv-total{border:2px solid #000;font-weight:800;font-size:12px;padding:4px;margin:6px 0;text-align:center}
+.inv-sheet-print .inv-disclaimer{font-size:8px;margin:6px 0 2px}
+.inv-sheet-print .inv-foot-line{font-size:10px;font-weight:700;margin-top:2px}
+@media print{
+  @page{size:75mm auto;margin:2mm}
+  body.printing-inv .inv-print.print-now{display:block!important;width:71mm!important;max-width:71mm!important;font-size:10px!important}
+}
+
+.inv-h1{text-align:center;font-size:13px;font-weight:800;line-height:1.3}
+.inv-h2{text-align:center;font-size:12px;font-weight:700;margin:4px 0}
+.inv-reg{text-align:center;font-size:9px;margin:2px 0 6px;line-height:1.4}
+.inv-meta-grid{display:block;font-size:10px;line-height:1.45;margin-bottom:6px;border-top:1px dashed #000;border-bottom:1px dashed #000;padding:6px 0}
+.inv-col-r,.inv-col-l{width:100%;text-align:right;margin-bottom:4px}
+.inv-col-r .lbl,.inv-col-l .lbl{font-weight:700}
+.inv-table{width:100%;border-collapse:collapse;font-size:9px;table-layout:fixed}
+.inv-table th,.inv-table td{border:1px solid #000;padding:2px 3px;text-align:right;word-break:break-word}
+.inv-table th{background:#eee;font-size:8px}
+.inv-table th:nth-child(1),.inv-table td:nth-child(1){width:18%}
+.inv-table th:nth-child(2),.inv-table td:nth-child(2){width:28%}
+.inv-table th:nth-child(3),.inv-table td:nth-child(3){width:12%}
+.inv-table th:nth-child(4),.inv-table td:nth-child(4){width:12%}
+.inv-table th:nth-child(5),.inv-table td:nth-child(5){width:14%}
+.inv-table th:nth-child(6),.inv-table td:nth-child(6){width:16%}
+.inv-total{margin-top:6px;font-size:12px;font-weight:800;text-align:center;border:1px solid #000;padding:4px}
+.inv-disclaimer{margin-top:6px;font-size:8px;text-align:center;border-top:1px dashed #000;padding-top:4px}
+.inv-foot-line{margin-top:4px;font-size:9px;text-align:center;font-weight:700}
+.sale-actions{display:flex;gap:8px;margin-top:8px}
+.sale-actions .btn{width:auto;flex:1;padding:10px;margin:0;font-size:.8rem}
+@page thermal75{
+  size: 75mm auto;
+  margin: 2mm;
+}
+@media print{
+  @page{ size: 75mm auto; margin: 2mm; }
+  html,body{width:75mm!important;margin:0!important;padding:0!important;background:#fff!important}
+  .inv-print.print-now{display:block!important;position:static!important;width:71mm!important;max-width:71mm!important;padding:1mm!important;margin:0 auto!important}
+  body.printing-inv .pane,body.printing-inv .top,body.printing-inv .tabs,
+  body.printing-inv .notif-panel,body.printing-inv .card,body.printing-inv .btn,
+  body.printing-inv .groupBar,body.printing-inv #groupBar,body.printing-inv .data-status{display:none!important}
+  body.printing-inv .inv-print.print-now{display:block!important}
+}
+
+.scan-box{background:#000;border-radius:12px;overflow:hidden;margin:8px 0;min-height:180px}
+.scan-box video{width:100%!important}
+.price-box{background:var(--s2);border:1px solid var(--bd);border-radius:12px;padding:12px;margin-top:10px;font-size:.85rem;line-height:1.7}
+.price-box b{color:var(--g);font-size:1.15rem}
+.disc-row{display:grid;grid-template-columns:1fr 1fr 1fr;gap:8px}
+</style>
+</head>
+<body>
+<div id="loginView" class="login-wrap">
+  <div class="card">
+    <h2 style="text-align:center;margin-bottom:14px">تطبيق <span style="color:var(--p)">المندوب</span></h2>
+    <label>البريد / اسم المستخدم</label>
+    <input type="email" id="lgEmail" placeholder="rep1@abuyounes.com" autocomplete="username"/>
+    <label>كلمة المرور</label>
+    <input type="password" id="lgPass" placeholder="••••••••" autocomplete="current-password"/>
+    <button class="btn" id="lgBtn">دخول</button>
+    <div class="msg" id="lgMsg"></div>
+  </div>
+</div>
+
+<div id="appView" style="display:none">
+  <div class="top">
+    <h1><span id="repRole">مندوب</span> <span id="repName">—</span></h1>
+    <div style="display:flex;gap:6px;align-items:center">
+      <select id="coSelect" style="width:auto;min-width:110px;max-width:160px;padding:6px 8px;font-size:.8rem;font-weight:700"></select>
+      <button type="button" class="bell" id="bellBtn">🔔<span class="dot" id="bellDot"></span></button>
+      <span class="badge" id="gpsBadge">GPS</span>
+      <span class="badge" id="netBadge">شبكة</span>
+      <span class="badge warn" id="qBadge" style="display:none">طابور 0</span>
+    </div>
+  </div>
+  <div class="data-status no-print" id="dataStatus">جاري تحميل بيانات الشركة...</div>
+  <div class="no-print" id="groupBar" style="margin:0 8px 8px;padding:10px 12px;background:linear-gradient(135deg,#1e3a5f,#121a2b);border:1px solid #3b82f6;border-radius:12px;display:flex;align-items:center;justify-content:space-between;gap:8px;flex-wrap:wrap">
+    <div style="font-size:.8rem;font-weight:700;color:#93c5fd">مجموعة أبو يونس</div>
+    <div style="font-size:.68rem;color:var(--m);flex:1;min-width:120px">تحليل · تقسيم الأصناف حسب الشركات · إرسال للإدارة</div>
+    <button type="button" class="btn" id="btnOpenGroup" style="width:auto;margin:0;padding:8px 14px;font-size:.75rem;background:#3b82f6">فتح</button>
+  </div>
+  <div id="qPanel" class="no-print" style="margin:0 8px 8px;display:none">
+    <div style="font-size:.75rem;font-weight:700;margin-bottom:4px;color:var(--o)">طابور المزامنة العالق</div>
+    <div id="qList" class="q-list"></div>
+  </div>
+  <div class="tabs no-print">
+    <button class="on" data-t="sale">مبيعات</button>
+    <button data-t="price">استعلام سعر</button>
+    <button data-t="col">تحصيل</button>
+    <button data-t="stock">مخزن</button>
+    <button data-t="vehicle">سيارة</button>
+    <button data-t="ar">عملاء</button>
+    <button data-t="visit">زيارة</button>
+    <button data-t="ret">مرتجعات</button>
+    <button data-t="exp">مصروفات</button>
+    <button data-t="day">ملخص يومي</button>
+    <button data-t="my">سجلّي</button>
+    <button data-t="ai">مجموعة أبو يونس</button>
+  </div>
+
+  <div class="pane on" id="p-sale">
+    <div class="card no-print">
+      <h2>إدخال بيع</h2>
+      <label>التاريخ</label><input type="date" id="s_date"/>
+      <label>العميل</label>
+      <input id="s_cust_q" placeholder="بحث اسم عميل..."/>
+      <select id="s_cust"><option value="">— اختر —</option></select>
+      <details class="no-print" style="margin:8px 0;border:1px solid var(--bd);border-radius:10px;padding:8px">
+        <summary style="cursor:pointer;color:var(--p);font-size:.8rem">+ إضافة عميل جديد</summary>
+        <label>اسم العميل</label><input id="nc_name" placeholder="اسم العميل"/>
+        <label>اسم المتجر</label><input id="nc_store" placeholder="اسم المتجر"/>
+        <label>الهاتف</label><input id="nc_phone" placeholder="رقم التليفون"/>
+        <label>العنوان</label><input id="nc_addr" placeholder="العنوان"/>
+        <button type="button" class="btn o" id="nc_save" style="margin-top:8px">حفظ العميل</button>
+        <div class="msg" id="nc_msg"></div>
+      </details>
+      <label>فئة البيع</label>
+      <select id="s_type"><option>جملة</option><option>تجزئة</option></select>
+      <label>باركود / كود الصنف</label>
+      <div class="row">
+        <div style="grid-column:1/-1;display:flex;gap:8px">
+          <input id="s_barcode" placeholder="امسح أو اكتب الباركود" style="flex:1" inputmode="numeric"/>
+          <button type="button" class="btn o" id="s_scan_btn" style="width:auto;margin:0;padding:10px 12px">📷 مسح</button>
+        </div>
+      </div>
+      <div id="s_scan_box" class="scan-box" style="display:none"></div>
+      <label>الصنف</label>
+      <input id="s_item_q" placeholder="بحث بالاسم..."/>
+      <select id="s_item"><option value="">— اختر —</option></select>
+      <div class="row">
+        <div><label>الكمية</label><input type="number" id="s_qty" step="any" value="1"/></div>
+        <div><label>سعر الوحدة</label><input type="number" id="s_price" step="any"/></div>
+      </div>
+      <div class="disc-row">
+        <div><label>خصم %</label><input type="number" id="s_disc" step="any" value="0"/></div>
+        <div><label>خصم مبلغ</label><input type="number" id="s_disc_amt" step="any" value="0"/></div>
+        <div><label>السعر النهائي للسطر</label><input type="number" id="s_net" step="any" readonly style="opacity:.9"/></div>
+      </div>
+      <div class="row">
+        <div><label>الدفع</label><select id="s_pay"><option>آجل</option><option>كاش</option></select></div>
+        <div><label>رصيد المخزن</label><input id="s_stock_wh" readonly placeholder="—"/></div>
+        <div><label>رصيد السيارة</label><input id="s_stock_car" readonly placeholder="—"/></div>
+      </div>
+      <button type="button" class="btn o" id="s_add_line" style="margin-bottom:8px">+ إضافة الصنف للفاتورة</button>
+      <div class="card" style="padding:8px;margin-bottom:8px;background:var(--s2)">
+        <h2 style="font-size:.85rem;margin:0 0 6px">أصناف الفاتورة</h2>
+        <div class="table-wrap"><table><thead><tr><th>صنف</th><th>كمية</th><th>سعر</th><th>صافي</th><th></th></tr></thead>
+        <tbody id="s_cart_body"><tr><td colspan="5" class="muted">لا أصناف بعد</td></tr></tbody></table></div>
+        <div style="text-align:left;font-weight:700;margin-top:6px">الإجمالي: <span id="s_cart_total">0</span></div>
+      </div>
+      <label>ملاحظة</label><textarea id="s_note"></textarea>
+      <button class="btn g" id="s_save">إرسال الفاتورة للإدارة</button>
+      <div class="msg" id="s_msg"></div>
+      <div class="sale-actions no-print" id="saleActionsBar" style="display:none;margin-top:10px">
+        <button type="button" class="btn btn-print" id="btnInvPrint">🖨 طباعة الفاتورة</button>
+        <button type="button" class="btn g" id="btnInvWa">📲 واتساب للعميل</button>
+      </div>
+      <p class="muted no-print" style="font-size:.68rem;margin-top:6px">بعد الإرسال: طباعة على ورق حراري 5.8 سم (اختر الطابعة الحرارية المتصلة) أو واتساب للعميل</p>
+    </div>
+  </div>
+
+  
+  <div class="pane" id="p-price">
+    <div class="card">
+      <h2>استعلام سعر فقط</h2>
+      <label>فئة البيع</label>
+      <select id="q_type"><option>جملة</option><option>تجزئة</option></select>
+      <label>باركود</label>
+      <div style="display:flex;gap:8px">
+        <input id="q_barcode" placeholder="امسح أو اكتب الباركود" style="flex:1" inputmode="numeric"/>
+        <button type="button" class="btn o" id="q_scan_btn" style="width:auto;margin:0;padding:10px 12px">📷 مسح</button>
+      </div>
+      <div id="q_scan_box" class="scan-box" style="display:none"></div>
+      <div class="price-box" id="q_result">اختر الفئة ثم امسح الباركود لعرض السعر والرصيد</div>
+    </div>
+  </div>
+
+  <div class="pane" id="p-col">
+    <div class="card no-print">
+      <h2>تسجيل تحصيل</h2>
+      <label>التاريخ</label><input type="date" id="c_date"/>
+      <label>العميل</label>
+      <input id="c_cust_q" placeholder="بحث..."/>
+      <select id="c_cust"><option value="">— اختر —</option></select>
+      <div class="row">
+        <div><label>مديونية العميل</label><input id="c_debt" readonly placeholder="—" style="color:#ef4444;font-weight:800;font-size:1.05rem"/></div>
+        <div><label>المبلغ</label><input type="number" id="c_amt" step="any"/></div>
+      </div>
+      <div class="row">
+        <div><label>الطريقة</label><select id="c_method"><option>كاش</option><option>تحويل</option></select></div>
+      </div>
+      <label>ملاحظة</label><textarea id="c_note"></textarea>
+      <button class="btn g" id="c_save">إرسال للإدارة</button>
+      <div class="msg" id="c_msg"></div>
+    </div>
+  </div>
+
+  <div class="pane" id="p-stock">
+    <div class="card">
+      <div class="print-header"><b>رصيد المخزن</b> — <span class="ph-co"></span> — <span class="ph-rep"></span></div>
+      <h2>رصيد المخزن</h2>
+      <div class="toolbar-print no-print">
+        <button type="button" class="btn btn-print" data-print="p-stock">طباعة المخزن</button>
+      </div>
+      <input id="st_q" class="no-print" placeholder="بحث صنف..."/>
+      <div style="max-height:60vh;overflow:auto">
+        <table><thead><tr><th>باركود</th><th>صنف</th><th>رصيد</th></tr></thead><tbody id="st_body"></tbody></table>
+      </div>
+    </div>
+  </div>
+
+  <div class="pane" id="p-vehicle">
+    <div class="card">
+      <h2>طلب تحميل سيارة توزيع</h2>
+      <p class="muted" style="font-size:.72rem;margin-bottom:8px">يُخصم من مخزن الشركة ويُضاف لرصيد السيارة بعد موافقة الإدارة</p>
+      <label>باركود / كود الصنف</label>
+      <div style="display:flex;gap:6px">
+        <input id="v_barcode" placeholder="امسح أو اكتب" style="flex:1" inputmode="numeric"/>
+        <button type="button" class="btn" id="v_scan" style="width:auto;padding:8px 12px;margin:0">📷</button>
+      </div>
+      <label>الصنف</label>
+      <input id="v_item" readonly placeholder="—"/>
+      <input type="hidden" id="v_item_id"/>
+      <input type="hidden" id="v_item_code"/>
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px">
+        <div><label>رصيد المخزن</label><input id="v_wh_stock" readonly/></div>
+        <div><label>رصيد السيارة</label><input id="v_car_stock" readonly/></div>
+      </div>
+      <label>الكمية المطلوبة</label>
+      <input type="number" id="v_qty" step="any" min="0"/>
+      <button type="button" class="btn o" id="v_add_line" style="margin-top:8px">+ إضافة الصنف للطلب</button>
+      <div style="margin-top:10px">
+        <h2 style="font-size:.85rem;margin:0 0 6px">أصناف طلب التحميل</h2>
+        <table><thead><tr><th>صنف</th><th>كمية</th><th></th></tr></thead>
+        <tbody id="v_cart_body"></tbody></table>
+        <div class="muted" id="v_cart_count" style="margin-top:4px"></div>
+      </div>
+      <label>ملاحظة</label>
+      <input id="v_note" placeholder="اختياري"/>
+      <button type="button" class="btn g" id="v_submit">إرسال طلب التحميل</button>
+      <div id="v_msg" class="muted" style="margin-top:8px"></div>
+      <p class="muted" style="font-size:.68rem">يمكن اختيار صنف بالباركود أو من القائمة حتى بدون باركود. عند ضعف الشبكة يُحفظ الطلب ويُزامَن تلقائياً.</p>
+    </div>
+    <div class="card">
+      <h2>رصيد سيارتي</h2>
+      <div class="table-wrap">
+        <table><thead><tr><th>باركود</th><th>صنف</th><th>رصيد السيارة</th></tr></thead>
+        <tbody id="v_stock_body"></tbody></table>
+      </div>
+    </div>
+    <div class="card">
+      <h2>طلبات التحميل</h2>
+      <div class="table-wrap">
+        <table><thead><tr><th>تاريخ</th><th>صنف</th><th>كمية</th><th>حالة</th></tr></thead>
+        <tbody id="v_req_body"></tbody></table>
+      </div>
+    </div>
+  </div>
+  <div class="pane" id="p-ar">
+    <div class="card">
+      <div class="print-header"><b>أرصدة العملاء</b> — <span class="ph-co"></span> — <span class="ph-rep"></span></div>
+      <h2>أرصدة العملاء</h2>
+      <div class="toolbar-print no-print">
+        <button type="button" class="btn btn-print" data-print="p-ar">طباعة الأرصدة</button>
+      </div>
+      <input id="ar_q" class="no-print" placeholder="بحث عميل..."/>
+      <div style="max-height:40vh;overflow:auto">
+        <table><thead><tr><th>عميل</th><th>متبقي</th><th class="no-print">كشف</th></tr></thead><tbody id="ar_body"></tbody></table>
+      </div>
+    </div>
+    <div class="card no-print" id="stmtCard" style="display:none">
+      <h2>كشف حساب عميل</h2>
+      <div id="stmtMeta" class="muted" style="margin-bottom:8px"></div>
+      <div style="overflow:auto;max-height:40vh">
+        <table>
+          <thead><tr><th>تاريخ</th><th>نوع</th><th>بيان</th><th>مدين</th><th>دائن</th><th>رصيد</th></tr></thead>
+          <tbody id="stmtBody"></tbody>
+        </table>
+      </div>
+      <div id="stmtTotal" style="margin-top:10px;font-weight:700"></div>
+      <div class="sale-actions" style="margin-top:10px">
+        <button type="button" class="btn btn-print" id="stmtPrint">طباعة الكشف</button>
+        <button type="button" class="btn g" id="stmtWa">إرسال واتساب</button>
+      </div>
+    </div>
+  </div>
+  <!-- طباعة كشف الحساب -->
+  <div id="stmtPrintArea" class="inv-print print-only">
+    <div class="inv-head">
+      
+      <div class="inv-h2">كشف حساب عميل</div>
+    </div>
+    <div class="inv-meta" id="stmtPrintMeta"></div>
+    <table class="inv-table">
+      <thead><tr><th>تاريخ</th><th>نوع</th><th>بيان</th><th>مدين</th><th>دائن</th><th>رصيد</th></tr></thead>
+      <tbody id="stmtPrintBody"></tbody>
+    </table>
+    <div class="inv-total" id="stmtPrintTotal"></div>
+    <div class="inv-foot"></div>
+  </div>
+
+  <div class="pane" id="p-visit">
+    <div class="card no-print">
+      <h2>تسجيل زيارة</h2>
+      <p class="gps" id="v_gps">جاري تحديد الموقع...</p>
+      <label>العميل (اختياري)</label>
+      <input id="v_cust_q" placeholder="بحث..."/>
+      <select id="v_cust"><option value="">— بدون —</option></select>
+      <label>أو اسم حر</label><input id="v_cname" placeholder="اسم / مكان"/>
+      <label>ملاحظات</label><textarea id="v_notes"></textarea>
+      <button class="btn o" id="v_save">حفظ الزيارة + الموقع</button>
+      <div class="msg" id="v_msg"></div>
+    </div>
+  </div>
+
+  
+  <div class="pane" id="p-exp">
+    <div class="card no-print">
+      <h2>تسجيل مصروف</h2>
+      <label>التاريخ</label><input type="date" id="e_date"/>
+      <label>البيان</label><input id="e_desc" placeholder="مثل: بنزين · انتقالات · ضيافة"/>
+      <div class="row">
+        <div><label>المبلغ</label><input type="number" id="e_amt" step="any"/></div>
+        <div><label>التصنيف</label>
+          <select id="e_cat">
+            <option>انتقالات</option><option>بنزين</option><option>ضيافة</option>
+            <option>صيانة</option><option>اتصالات</option><option>أخرى</option>
+          </select>
+        </div>
+      </div>
+      <label>ملاحظة</label><textarea id="e_note"></textarea>
+      <button class="btn g" id="e_save">إرسال للإدارة</button>
+      <div class="msg" id="e_msg"></div>
+    </div>
+  </div>
+
+  
+  <div class="pane" id="p-ret">
+    <div class="card">
+      <h2>مرتجع عميل → سيارة / مخزن</h2>
+      <p class="muted" style="font-size:.72rem">يُرسل للإدارة للاعتماد. اختر الوجهة: سيارة المندوب أو مخزن الشركة</p>
+      <label>التاريخ</label><input type="date" id="r_date"/>
+      <label>العميل</label>
+      <input id="r_cust_q" placeholder="بحث عميل..."/>
+      <select id="r_cust"><option value="">— اختر —</option></select>
+      <label>الصنف</label>
+      <input id="r_item_q" placeholder="بحث صنف..."/>
+      <select id="r_item"><option value="">— اختر —</option></select>
+      <div class="row">
+        <div><label>الكمية</label><input type="number" id="r_qty" step="any" value="1"/></div>
+        <div><label>السعر الفعلي بعد الخصم</label><input type="number" id="r_price" step="any"/></div>
+      </div>
+      <label>الوجهة</label>
+      <select id="r_dest">
+        <option value="vehicle">إلى سيارة المندوب</option>
+        <option value="warehouse">إلى مخزن الشركة</option>
+      </select>
+      <label>ملاحظة</label><input id="r_note"/>
+      <button type="button" class="btn g" id="r_save">إرسال المرتجع للإدارة</button>
+      <div class="msg" id="r_msg"></div>
+    </div>
+    <div class="card">
+      <h2>ارتجاع من السيارة → المخزن</h2>
+      <p class="muted" style="font-size:.72rem">يُخصم من رصيد السيارة ويُضاف لرصيد مخزن الشركة بعد اعتماد الإدارة (يظهر في نظام المندوب والإدارة)</p>
+      <label>الصنف من رصيد السيارة</label>
+      <select id="rv_item"><option value="">— اختر —</option></select>
+      <label>الكمية</label><input type="number" id="rv_qty" step="any" value="1"/>
+      <label>ملاحظة</label><input id="rv_note"/>
+      <button type="button" class="btn o" id="rv_save">إرسال تفريغ السيارة</button>
+      <div class="msg" id="rv_msg"></div>
+    </div>
+  </div>
+
+  
+  <div class="pane" id="p-ai">
+    <div class="card" style="border-color:#3b82f6">
+      <h2>مجموعة أبو يونس</h2>
+      <p class="muted" style="font-size:.72rem;margin-bottom:8px">مجموعة أبو يونس: تحليل العمليات · تقسيم الأصناف حسب الشركات · إرسال منظم للإدارة</p>
+      <div id="aiLive" class="muted" style="font-size:.8rem;line-height:1.7;min-height:40px">بعد إرسال بيع أو تحصيل أو مصروف أو تحميل سيارة سيظهر التحليل هنا تلقائياً.</div>
+      <button type="button" class="btn o" id="aiAnalyzeDay" style="margin-top:8px">تحليل يومي الآن</button>
+      <button type="button" class="btn g" id="aiSendAdmin" style="margin-top:8px">إرسال آخر تحليل للإدارة</button>
+      <div class="msg" id="aiMsg"></div>
+    </div>
+    <div class="card">
+      <h2>سجل التحليلات</h2>
+      <div id="aiLog" style="font-size:.75rem;max-height:40vh;overflow:auto"></div>
+    </div>
+  </div>
+
+  <div class="pane" id="p-day">
+    <div class="card">
+      <div class="print-header">
+        <div style="font-size:1.1rem;font-weight:700">ملخص يومي نهائي</div>
+        <div>المندوب: <span class="ph-rep"></span> · الشركة: <span class="ph-co"></span></div>
+        <div>الفترة: <span id="dayRangeLabel">—</span></div>
+        <div>تاريخ الطباعة: <span id="dayPrintAt"></span></div>
+      </div>
+      <h2 class="no-print">ملخص يومي / فترة</h2>
+      <div class="filter-bar no-print">
+        <label>من<input type="date" id="dayFrom"/></label>
+        <label>إلى<input type="date" id="dayTo"/></label>
+        <button type="button" class="btn" id="dayGo" style="width:auto;margin:0;padding:10px 14px">عرض</button>
+      </div>
+      <div class="toolbar-print no-print" style="display:flex;gap:8px;flex-wrap:wrap">
+        <button type="button" class="btn btn-print" data-print="p-day" style="width:auto;flex:1">طباعة / PDF</button>
+        <button type="button" class="btn g" id="dayShareWa" style="width:auto;flex:1;margin:0">واتساب للجروب</button>
+      </div>
+      <p class="muted no-print" style="font-size:.68rem;margin:6px 0">للـ PDF: اختر طباعة ثم «حفظ كـ PDF» أو Share → PDF على الموبايل</p>
+      <div class="kpi-row" id="dayKpis"></div>
+      <h2 style="font-size:.85rem;margin:12px 0 6px">المبيعات</h2>
+      <div style="overflow:auto"><table>
+        <thead><tr><th>تاريخ</th><th>عميل</th><th>صنف</th><th>كمية</th><th>سعر</th><th>صافي</th><th>دفع</th><th>حالة</th></tr></thead>
+        <tbody id="daySales"></tbody>
+      </table></div>
+      <h2 style="font-size:.85rem;margin:12px 0 6px">التحصيلات</h2>
+      <div style="overflow:auto"><table>
+        <thead><tr><th>تاريخ</th><th>عميل</th><th>مبلغ</th><th>طريقة</th><th>حالة</th></tr></thead>
+        <tbody id="dayCols"></tbody>
+      </table></div>
+      <h2 style="font-size:.85rem;margin:12px 0 6px">المصروفات</h2>
+      <div style="overflow:auto"><table>
+        <thead><tr><th>تاريخ</th><th>بيان</th><th>تصنيف</th><th>مبلغ</th><th>حالة</th></tr></thead>
+        <tbody id="dayExps"></tbody>
+      </table></div>
+      <h2 style="font-size:.85rem;margin:12px 0 6px">الزيارات</h2>
+      <div style="overflow:auto"><table>
+        <thead><tr><th>الوقت</th><th>عميل/مكان</th><th>ملاحظات</th><th>موقع</th></tr></thead>
+        <tbody id="dayVisits"></tbody>
+      </table></div>
+      <div id="dayTotals" style="margin-top:14px;padding:10px;border:2px solid var(--bd);border-radius:10px;font-size:.85rem"></div>
+    </div>
+  </div>
+
+  <div class="pane" id="p-my">
+    <div class="kpi-row">
+      <div class="kpi"><div class="l">مبيعات معلّقة</div><div class="v" id="my_s">0</div></div>
+      <div class="kpi"><div class="l">تحصيل معلّق</div><div class="v" id="my_c">0</div></div>
+      <div class="kpi"><div class="l">مصروف معلّق</div><div class="v" id="my_e">0</div></div>
+    </div>
+    <div class="card">
+      <div class="print-header"><b>سجل المندوب</b> — <span class="ph-rep"></span> — <span class="ph-co"></span></div>
+      <h2>سجلّي</h2>
+      <div class="filter-bar no-print">
+        <label>من<input type="date" id="myFrom"/></label>
+        <label>إلى<input type="date" id="myTo"/></label>
+        <button type="button" class="btn" id="myFilter" style="width:auto;margin:0;padding:10px 14px">تصفية</button>
+      </div>
+      <div class="toolbar-print no-print">
+        <button type="button" class="btn btn-print" data-print="p-my">طباعة السجل</button>
+      </div>
+      <h2 style="font-size:.85rem">المبيعات</h2><div id="my_sales"></div>
+      <h2 style="font-size:.85rem;margin-top:10px">التحصيلات</h2><div id="my_cols"></div>
+      <h2 style="font-size:.85rem;margin-top:10px">المصروفات</h2><div id="my_exps"></div>
+      <h2 style="font-size:.85rem;margin-top:10px">الزيارات</h2><div id="my_visits"></div>
+    </div>
+    <div class="card" id="offlineCard">
+      <h2>المزامنة (أوفلاين)</h2>
+      <p class="muted" id="netStatus">حالة الشبكة: —</p>
+      <div class="q-list" id="qList"></div>
+      <button class="btn o" type="button" id="btnSync" style="margin-top:8px">مزامنة الآن</button>
+      <div class="msg" id="syncMsg"></div>
+    </div>
+    <button class="btn ghost" id="btnOut">خروج</button>
+  </div>
+</div>
+
+
+<!-- منطقة طباعة الفاتورة -->
+<div id="invPrint" class="inv-print print-only">
+  <div class="inv-head">
+    
+    <div class="inv-sub">فاتورة مبيعات مندوب</div>
+  </div>
+  <div class="inv-meta" id="invMeta"></div>
+  <table class="inv-table">
+    <thead><tr><th>الصنف</th><th>كمية</th><th>سعر</th><th>خصم%</th><th>الصافي</th></tr></thead>
+    <tbody id="invBody"></tbody>
+  </table>
+  <div class="inv-total" id="invTotal"></div>
+  <div class="inv-foot" id="invFoot"></div>
+</div>
+
+<div class="notif-panel" id="notifPanel">
+  <div class="notif-box">
+    <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:10px">
+      <h2 style="font-size:.95rem">الإشعارات</h2>
+      <button type="button" class="btn ghost" style="width:auto;padding:6px 12px;margin:0" id="notifClose">إغلاق</button>
+    </div>
+    <button type="button" class="btn ghost" id="notifReadAll" style="margin-top:0">تعليم الكل كمقروء</button>
+    <div id="notifList"></div>
+  </div>
+</div>
+
+<script>
+const $ = id => document.getElementById(id);
+let sb=null, user=null, profile=null, companyDB=null, currentCompany="";
+const ALL_COMPANIES = [
+  {id:"الراعي", label:"الراعي", aliases:["الراعي","راعي","شركة 1","شركة1","1","company1","raei","alraei"]},
+  {id:"الحموي", label:"الحموي", aliases:["الحموي","حموي","شركة 2","شركة2","2","company2","hamwi","alhamwi"]},
+  {id:"زدنا", label:"زدنا", aliases:["زدنا","شركة 3","شركة3","3","company3","zedna","zidna"]},
+  {id:"فوليانا", label:"فوليانا", aliases:["فوليانا","شركة 4","شركة4","4","company4","voliana","foliana"]},
+  {id:"بسكو مصر", label:"بسكو مصر", aliases:["بسكو مصر","بسكو","شركة 5","شركة5","5","bisco","bisco misr"]},
+  {id:"ابويونس للتجارة والتوكيلات", label:"ابويونس للتجارة والتوكيلات", aliases:["ابويونس","أبو يونس","مجموعة أبو يونس","مجموعة ابويونس","all","الكل"]}
+];
+function normalizeCompany(name){
+  const s=String(name||"").trim();
+  if(!s) return "";
+  const low=s.replace(/\s+/g,"").toLowerCase();
+  for(const c of ALL_COMPANIES){
+    if(c.id===s || c.label===s) return c.id;
+    for(const a of (c.aliases||[])){
+      if(a===s || a.replace(/\s+/g,"").toLowerCase()===low) return c.id;
+    }
+    // "شركة 1 — الراعي" أو أي نص يحتوي اسم الشركة
+    if(s.indexOf(c.id)>=0) return c.id;
+  }
+  return s;
+}
+function companyLabel(id){
+  const n=normalizeCompany(id);
+  const f=ALL_COMPANIES.find(c=>c.id===n);
+  return f ? f.label : (n||String(id||"—"));
+}
+function allCompanyIds(){ return ALL_COMPANIES.map(c=>c.id); }
+
+let gps={lat:null,lng:null,accuracy:null};
+let notifChannel=null;
+
+
+function isOnline(){
+  try{ return typeof navigator!=="undefined" && navigator.onLine!==false; }catch(e){ return true; }
+}
+function setNetUI(on){
+  try{
+    if(typeof on==="undefined") on=isOnline();
+    const el=document.getElementById("netBadge");
+    if(el){
+      el.textContent = on ? "شبكة ✓" : "أوفلاين";
+      el.className = on ? "badge on" : "badge off";
+      el.title = on ? "متصل بالإنترنت" : "بدون اتصال — الحفظ في الطابور";
+    }
+    const st=document.getElementById("dataStatus");
+    if(st && /جاري|تحميل|offline|أوفلاين/i.test(st.textContent||"")){
+      // لا تستبدل رسالة تحميل بيانات الشركة
+    }
+  }catch(e){}
+}
+
+// ===== Offline queue + sync =====
+const QKEY = () => "rep_offline_q_" + (user && user.id ? user.id : "guest");
+function loadQ(){ try{ return JSON.parse(localStorage.getItem(QKEY())||"[]"); }catch(e){ return []; } }
+function saveQ(arr){ localStorage.setItem(QKEY(), JSON.stringify(arr)); updateQBadge(); }
+function updateQBadge(){
+  const q=loadQ(); const el=$("qBadge"); if(!el) return;
+  if(q.length){ el.style.display=""; el.textContent="طابور "+q.length; el.title="اضغط للمزامنة أو امسح العالق"; }
+  else el.style.display="none";
+  const list=$("qList"); if(!list) return;
+  list.style.display = q.length ? "block" : "none";
+  const pan=$("qPanel"); if(pan) pan.style.display = q.length ? "block" : "none";
+  list.innerHTML=q.length
+    ? q.map((x,i)=>`<div style="display:flex;justify-content:space-between;gap:6px;align-items:center">
+        <span>${x.type||""}: ${x.label||""}</span>
+        <button type="button" data-qdel="${i}" style="padding:2px 6px;font-size:.65rem;border:1px solid #ccc;border-radius:6px;background:#fff;cursor:pointer">حذف</button>
+      </div>`).join("")
+      + `<div style="margin-top:8px;display:flex;gap:6px">
+          <button type="button" id="btnFlushQ" class="btn g" style="padding:6px 10px;font-size:.75rem">مزامنة الآن</button>
+          <button type="button" id="btnClearQ" class="btn r" style="padding:6px 10px;font-size:.75rem">مسح الطابور</button>
+        </div>`
+    : `<div class="muted">الطابور فارغ</div>`;
+  list.querySelectorAll("[data-qdel]").forEach(b=>{
+    b.onclick=()=>{ const arr=loadQ(); arr.splice(+b.dataset.qdel,1); saveQ(arr); };
+  });
+  const bf=list.querySelector("#btnFlushQ"); if(bf) bf.onclick=()=>flushQueue();
+  const bc=list.querySelector("#btnClearQ"); if(bc) bc.onclick=()=>{
+    if(confirm("مسح كل عناصر الطابور المحلي؟ (لن تُحذف من السحابة إن كانت أُرسلت)")){ saveQ([]); }
+  };
+  // نقرة على الشارة = إظهار/مزامنة
+  el.onclick = ()=>{ try{ flushQueue(); }catch(e){} };
+}
+
+function enqueue(type, payload, label){
+  const q=loadQ();
+  // منع تكرار نفس العنصر
+  try{
+    const fp = JSON.stringify({type, item:payload&&(payload.item_id||payload.item_name), qty:payload&&payload.qty, date:payload&&(payload.load_date||payload.sale_date), cust:payload&&payload.customer_id});
+    if(q.some(x=>{
+      try{ return JSON.stringify({type:x.type, item:x.payload&&(x.payload.item_id||x.payload.item_name), qty:x.payload&&x.payload.qty, date:x.payload&&(x.payload.load_date||x.payload.sale_date), cust:x.payload&&x.payload.customer_id})===fp; }
+      catch(e){ return false; }
+    })) return;
+  }catch(e){}
+  q.push({id:Math.random().toString(16).slice(2), type, payload, label, at:new Date().toLocaleString("ar-EG"), tries:0});
+  saveQ(q);
+}
+
+/** حذف عناصر الطابور التي لم تعد مطلوبة (مكررة في السحابة أو معتمدة) */
+async function pruneQueue(){
+  if(!sb || !user) return;
+  let q=loadQ();
+  if(!q.length) return;
+  const remain=[];
+  for(const item of q){
+    try{
+      if(item.type==="vehicle_load" && item.payload){
+        const p=item.payload;
+        let query=sb.from("rep_vehicle_load_draft").select("id,status").eq("rep_id", p.rep_id||user.id).limit(5);
+        if(p.item_id) query=query.eq("item_id", p.item_id);
+        if(p.load_date) query=query.eq("load_date", p.load_date);
+        const {data}=await query;
+        // إن وُجد أي سجل (معلّق أو معتمد) لنفس الصنف/اليوم — احذف من الطابور
+        if(data && data.length) continue;
+      } else if(item.type==="sale" && item.payload){
+        const p=item.payload;
+        // لا نحذف بيع بسهولة إلا إذا نفس اليوم والصنف والعميل موجود pending
+        if(p.item_name && p.sale_date){
+          const {data}=await sb.from("rep_sales_draft").select("id").eq("rep_id", p.rep_id||user.id)
+            .eq("sale_date", p.sale_date).eq("item_name", p.item_name).limit(3);
+          if(data && data.length) continue;
+        }
+      }
+      // محاولات كثيرة فاشلة لنفس العنصر
+      if(num(item.tries)>=8) continue;
+      remain.push(item);
+    }catch(e){
+      remain.push(item);
+    }
+  }
+  if(remain.length!==q.length){
+    saveQ(remain);
+    console.info("[pruneQueue] removed", q.length-remain.length, "stale items");
+  }
+}
+
+async function flushQueue(){
+  const syncMsg=$("syncMsg"); if(syncMsg){ syncMsg.className="msg"; syncMsg.textContent="جاري المزامنة..."; }
+  if(!(typeof isOnline==='function'?isOnline():navigator.onLine)||!user||!sb){ if(syncMsg){ syncMsg.className="msg err"; syncMsg.textContent="لا اتصال أو لم يتم الدخول"; } return; }
+  // نظّف العالق أولاً
+  try{ await pruneQueue(); }catch(e){}
+  let q=loadQ(); if(!q.length){ if(syncMsg){ syncMsg.className="msg ok"; syncMsg.textContent="الطابور فارغ"; } updateQBadge(); return; }
+  const remain=[];
+  let ok=0, fail=0, skipped=0;
+  for(const item of q){
+    try{
+      if(item.type==="return" || item.type==="v2wh"){
+        if(item.type==="return"){
+          const p=item.payload||{};
+          const {error}=await insertDraft("rep_sales_draft", {
+            rep_id:p.rep_id, company:p.company, sale_date:p.ret_date||p.sale_date,
+            customer_id:p.customer_id, customer_name:p.customer_name,
+            item_code:p.item_code, item_name:"[مرتجع] "+(p.item_name||""),
+            qty: -Math.abs(num(p.qty)), price:num(p.price), disc:0, discAmt:0,
+            pay:"آجل", sale_type:"مرتجع", note:"وجهة:"+(p.dest||"")+" · "+(p.note||""), status:"pending"
+          });
+          if(error) throw error;
+        } else {
+          const p=item.payload||{};
+          const {error}=await insertDraft("rep_vehicle_load_draft", {
+            rep_id:p.rep_id, company:p.company, load_date: new Date().toISOString().slice(0,10),
+            item_id:p.item_id, item_name:p.item_name, item_code:"", qty:-Math.abs(num(p.qty)),
+            note:"تفريغ للمخزن · "+(p.note||""), status:"pending"
+          });
+          if(error) throw error;
+        }
+      } else if(item.type==="sale"){
+        const {error}=await insertDraft("rep_sales_draft", item.payload);
+        if(error) throw error;
+        try{ await sb.from("rep_notifications").insert({user_id:user.id,title:"مزامنة بيع أوفلاين",body:item.label||"",kind:"draft_sent",ref_type:"sale"}); }catch(e){}
+      } else if(item.type==="collection"){
+        const {error}=await insertDraft("rep_collections_draft", item.payload);
+        if(error) throw error;
+        try{ await sb.from("rep_notifications").insert({user_id:user.id,title:"مزامنة تحصيل أوفلاين",body:item.label||"",kind:"draft_sent",ref_type:"collection"}); }catch(e){}
+      } else if(item.type==="visit"){
+        const {error}=await sb.from("rep_visits").insert(item.payload);
+        if(error) throw error;
+      } else if(item.type==="vehicle_load"){
+        // تحقق إن موجود مسبقاً
+        const p=item.payload||{};
+        try{
+          let qy=sb.from("rep_vehicle_load_draft").select("id").eq("rep_id", p.rep_id||user.id).limit(3);
+          if(p.item_id) qy=qy.eq("item_id", p.item_id);
+          if(p.load_date) qy=qy.eq("load_date", p.load_date);
+          const {data:ex}=await qy;
+          if(ex && ex.length){ skipped++; continue; }
+        }catch(e){}
+        const r=await insertDraft("rep_vehicle_load_draft", item.payload);
+        if(r && r.error) throw r.error;
+        try{
+          const key="ay_pending_vloads";
+          let arr=JSON.parse(localStorage.getItem(key)||"[]");
+          const fp=typeof vloadFp==="function"?vloadFp(item.payload||{}):"";
+          if(fp) arr=arr.filter(x=>vloadFp(x)!==fp);
+          localStorage.setItem(key, JSON.stringify(arr));
+        }catch(e){}
+      } else if(item.type==="expense"){
+        const {error}=await insertDraft("rep_expenses_draft", item.payload);
+        if(error) throw error;
+        try{ await sb.from("rep_notifications").insert({user_id:user.id,title:"مزامنة مصروف أوفلاين",body:item.label||"",kind:"draft_sent",ref_type:"expense"}); }catch(e){}
+      } else {
+        // نوع مجهول — تخلص منه حتى لا يعلق الطابور
+        skipped++; continue;
+      }
+      ok++;
+    }catch(e){
+      fail++;
+      item.tries = num(item.tries)+1;
+      if(item.tries < 8) remain.push(item);
+      else skipped++;
+      console.warn("sync fail", e);
+    }
+  }
+  saveQ(remain);
+  if(syncMsg){
+    syncMsg.className=fail?"msg err":"msg ok";
+    syncMsg.textContent=`مزامنة: ${ok} نجح`+(fail?` · ${fail} فشل`:``)+(skipped?` · ${skipped} تخطي/تنظيف`:``)+(remain.length?` · متبقي ${remain.length}`:` · الطابور فارغ`);
+  }
+  updateQBadge();
+  try{ loadMyHistory(); }catch(e){}
+  try{ if(typeof loadVehicleReqs==="function") loadVehicleReqs(); }catch(e){}
+}
+
+
+// wrap original save functions via patching at runtime after definition
+const _saveSaleOrig = null;
+
+
+
+function jobTitleFor(name){
+  const n=String(name||"").trim();
+  // فهد = مشرف (عرض فقط — نفس صلاحيات المندوب)
+  if(n==="فهد" || n.startsWith("فهد ") || n.endsWith(" فهد")) return "مشرف";
+  return "مندوب";
+}
+function displayRepLabel(name){
+  return jobTitleFor(name)+" "+(name||"");
+}
+
+function normRepName(n){
+  let s=String(n||"").replace(/\s+/g," ").trim();
+  if(!s) return "";
+  s=s.replace(/^(مشرف|مندوب|السائق|سائق)\s*[:：\-]?\s*/u,"").trim();
+  s=s.replace(/[()]/g,"").trim();
+  if(/^\d+([.,]\d+)?$/.test(s)) return "";
+  if(/^[0-9a-f]{8}-[0-9a-f-]{20,}$/i.test(s)) return "";
+  if(/^[0-9a-f]{16,}$/i.test(s)) return "";
+  if(/فهد/.test(s)) return "فهد ابراهيم";
+  if(/مصط+ف[ىي]/.test(s) || /مصطف[ىي]/.test(s)) return "مصطفى محمد فتحي";
+  return s;
+}
+function displayRepName(n){
+  const u=normRepName(n);
+  if(!u) return "بدون مندوب";
+  if(u==="فهد ابراهيم") return "مشرف: فهد ابراهيم";
+  if(u==="مصطفى محمد فتحي") return "مندوب: مصطفى محمد فتحي";
+  return "مندوب: "+u;
+}
+function sameRep(a,b){ const x=normRepName(a), y=normRepName(b); return !!x && x===y; }
+
+function num(v){const n=parseFloat(v);return isNaN(n)?0:n}
+function fmt(n){return num(n).toLocaleString("en-US",{maximumFractionDigits:2})}
+function today(){return new Date().toISOString().slice(0,10)}
+function lineTotal(q,p,d,da){const g=num(q)*num(p); if(da!=null&&num(da)>0) return Math.max(0,g-num(da)); return g*(1-num(d)/100)}
+
+function initSB(){
+  const url=(window.SUPABASE_URL||"").trim();
+  const key=(window.SUPABASE_ANON_KEY||"").trim();
+  if(!url||!key||url.includes("YOUR_")) throw new Error("اضبط config.js");
+  sb = supabase.createClient(url, key, {auth:{persistSession:true,autoRefreshToken:true}});
+}
+
+async function login(){
+  lgMsg.textContent=""; lgMsg.className="msg";
+  try{
+    initSB();
+    let email = lgEmail.value.trim();
+    // إذا أدخل يوزر نيم بدون @ نستخدمه كبريد كامل إن وُجد، أو نضيف نطاقًا افتراضيًا
+    if(email && !email.includes("@")) email = email + "@rep.local";
+    const {data,error}=await sb.auth.signInWithPassword({email, password:lgPass.value});
+    if(error) throw error;
+    user=data.user;
+    await afterLogin();
+  }catch(e){ lgMsg.className="msg err"; lgMsg.textContent=e.message||String(e); }
+}
+
+async function afterLogin(){
+  // يدعم: صف واحد بـ companies[]  أو عدة صفوف (user_id + company)
+  const {data:rows,error}=await sb.from("rep_profiles").select("*").eq("user_id",user.id);
+  if(error) throw error;
+  const list=(rows||[]).filter(r=>r.active!==false);
+  if(!list.length) throw new Error("لا يوجد ملف مندوب أو الحساب غير مفعّل — تأكد من user_id في rep_profiles");
+  const cos=[];
+  list.forEach(r=>{
+    if(Array.isArray(r.companies)) r.companies.forEach(c=>{
+      const n=normalizeCompany(c);
+      if(n && !cos.includes(n)) cos.push(n);
+    });
+    if(r.company){
+      const n=normalizeCompany(r.company);
+      if(n && !cos.includes(n)) cos.push(n);
+    }
+  });
+  // إن لم تُربط شركات أو كانت بأسماء قديمة غير معروفة — استخدم الأربع كلها
+  if(!cos.length){
+    allCompanyIds().forEach(c=>cos.push(c));
+  }
+  profile={
+    user_id:user.id,
+    name:list[0].name||"",
+    phone:list[0].phone||"",
+    companies:cos,
+    job_title:list[0].job_title||"",
+    active:true
+  };
+  // تطبيع + ترتيب حسب ALL_COMPANIES
+  const normalized=cos.map(normalizeCompany).filter(Boolean);
+  const ordered=[];
+  ALL_COMPANIES.forEach(c=>{ if(normalized.includes(c.id) && !ordered.includes(c.id)) ordered.push(c.id); });
+  normalized.forEach(c=>{ if(!ordered.includes(c)) ordered.push(c); });
+  if(!ordered.length) allCompanyIds().forEach(c=>ordered.push(c));
+  currentCompany = normalizeCompany(ordered[0]);
+  coSelect.innerHTML = ordered.map(c=>`<option value="${c}">${companyLabel(c)}</option>`).join("");
+  coSelect.value = currentCompany;
+  repName.textContent = profile.name;
+  if(typeof repRole!=="undefined"&&repRole) repRole.textContent=(profile.job_title||jobTitleFor(profile.name));
+  document.title = jobTitleFor(profile.name)+" — "+(profile.name||"");
+  loginView.style.display="none";
+  appView.style.display="block";
+  s_date.value=today(); c_date.value=today();
+  if($("e_date")) e_date.value=today();
+  if($("dayFrom")){ dayFrom.value=today(); dayTo.value=today(); }
+  if($("myFrom")){ const d=new Date(); const a=new Date(d.getFullYear(),d.getMonth(),1);
+    myFrom.value=a.toISOString().slice(0,10); myTo.value=today(); }
+  await loadCompanyData();
+  fillSelects(); if(typeof fillReturnSelects==='function') fillReturnSelects(); renderStock(); renderAR();
+  await loadMyHistory();
+  await loadNotifications();
+  startGPS();
+  setInterval(pushLocation, 20000);
+  setInterval(loadNotifications, 30000);
+  subscribeNotifs();
+  setNetUI(isOnline()); updateQBadge();
+  try{
+    if(window.AY_IO) AY_IO.injectToolbar({
+      fileName: "مندوب_"+(profile&&profile.name||"rep"),
+      pdfName: "ملخص_مندوب",
+      pdfTarget: document.getElementById("appView")||document.body,
+      getData: function(){
+        return {rep: profile, company: currentCompany, queue: (typeof loadQ==="function"?loadQ():[]), at: new Date().toISOString()};
+      },
+      onImport: function(){ alert("استيراد بيانات المندوب يتم من إدارة النظام"); }
+    });
+  }catch(e){} if(isOnline()) flushQueue();
+}
+
+coSelect.onchange = async ()=>{
+  currentCompany = normalizeCompany(coSelect.value);
+  const st=document.getElementById("dataStatus");
+  if(st){ st.className="data-status no-print"; st.textContent="جاري تحميل "+companyLabel(currentCompany)+"…"; }
+  vehicleCart=[]; try{ renderVehicleCart(); }catch(e){}
+  await loadCompanyData();
+  fillSelects();
+  try{ fillVItemPick(); }catch(e){}
+  if(typeof renderStock==="function") renderStock();
+  if(typeof renderAR==="function") renderAR();
+  if(typeof loadMyHistory==="function") try{ await loadMyHistory(); }catch(e){}
+  if(typeof renderDaySummary==="function") try{ await renderDaySummary(); }catch(e){}
+  if(typeof loadVehicleStock==="function") try{ await loadVehicleStock(); }catch(e){}
+  if(typeof loadVehicleReqs==="function") try{ await loadVehicleReqs(); }catch(e){}
+  // مسح فاتورة سابقة عند تغيير الشركة
+  window.__lastInv=null;
+  const bar=document.getElementById("saleActionsBar");
+  if(bar) bar.style.display="none";
+};
+
+function emptyCompanyDB(){
+  return {items:[],customers:[],suppliers:[],sales:[],purchases:[],customerReturns:[],supplierReturns:[],collections:[],payments:[],expenses:[],checks:[]};
+}
+function hasCompanyData(o){
+  if(!o || typeof o!=="object") return false;
+  return dataScore(o)>0;
+}
+function dataScore(o){
+  if(!o||typeof o!=="object") return 0;
+  return (o.items||[]).length*2 + (o.customers||[]).length*2 + (o.sales||[]).length
+    + (o.purchases||[]).length + (o.collections||[]).length + (o.payments||[]).length;
+}
+function updateDataStatus(source, db){
+  const el=document.getElementById("dataStatus");
+  if(!el) return;
+  const nI=(db.items||[]).length, nC=(db.customers||[]).length, nS=(db.sales||[]).length;
+  if(!nI && !nC){
+    el.className="data-status warn no-print";
+    el.innerHTML=`⚠️ ${companyLabel(currentCompany||"")}: لا بيانات محمّلة · المصدر: ${source||"—"} · <button type="button" id="btnReloadData" style="margin-right:6px;padding:4px 10px;border-radius:6px;border:0;background:var(--p);color:#fff;font-size:.7rem;cursor:pointer">تحديث الآن</button>`;
+  } else {
+    el.className="data-status ok no-print";
+    el.innerHTML=`✅ ${companyLabel(currentCompany||"")} · أصناف ${nI} · عملاء ${nC} · مبيعات ${nS} · المصدر: <b>${source||"—"}</b> · <button type="button" id="btnReloadData" style="margin-right:6px;padding:4px 10px;border-radius:6px;border:0;background:var(--s2);color:var(--t);border:1px solid var(--bd);font-size:.7rem;cursor:pointer">تحديث</button>`;
+  }
+  const b=document.getElementById("btnReloadData");
+  if(b) b.onclick=async()=>{
+    el.textContent="جاري التحديث...";
+    await loadCompanyData();
+    fillSelects(); if(typeof fillReturnSelects==='function') fillReturnSelects(); renderStock(); renderAR();
+  };
+}
+async function loadCompanyData(){
+  currentCompany = normalizeCompany(currentCompany);
+  let cloud=null, cloudAt="", local=null, localSrc="", embedded=null;
+
+  // 1) سحابة (الاسم الرسمي + الأسماء البديلة)
+  try{
+    if(sb){
+      const idsTry=[currentCompany];
+      const meta=ALL_COMPANIES.find(c=>c.id===currentCompany);
+      if(meta) (meta.aliases||[]).forEach(a=>{ if(a && !idsTry.includes(a)) idsTry.push(a); });
+      for(const cid of idsTry){
+        const {data,error}=await sb.from("company_data").select("data,updated_at").eq("id", cid).maybeSingle();
+        if(error) console.warn("[loadCompanyData] cloud", cid, error);
+        if(data && data.data && dataScore(data.data)>0){
+          cloud=data.data;
+          cloudAt=data.updated_at?String(data.updated_at).slice(0,16).replace("T"," "):"";
+          break;
+        }
+      }
+    }
+  }catch(e){ console.warn(e); }
+
+  // 2) localStorage
+  try{
+    const keys=["acc_abu_"+currentCompany+"_v2","acc_abu_"+currentCompany,currentCompany+"_db","ay_"+currentCompany];
+    for(const k of keys){
+      const raw=localStorage.getItem(k);
+      if(!raw) continue;
+      try{
+        const o=JSON.parse(raw);
+        if(dataScore(o)>0){ local=o; localSrc="محلي"; break; }
+      }catch(e){}
+    }
+    if(!local){
+      for(let i=0;i<localStorage.length;i++){
+        const k=localStorage.key(i);
+        if(!k || k.indexOf(currentCompany)<0) continue;
+        try{
+          const o=JSON.parse(localStorage.getItem(k)||"null");
+          if(dataScore(o)>0){ local=o; localSrc="محلي("+k+")"; break; }
+        }catch(e){}
+      }
+    }
+  }catch(e){ console.warn(e); }
+
+  // 3) بيانات مضمّنة (company_seeds.js) — لا تعتمد على fetch
+  try{
+    if(window.COMPANY_SEEDS && window.COMPANY_SEEDS[currentCompany]){
+      const o=window.COMPANY_SEEDS[currentCompany];
+      if(dataScore(o)>0) embedded=o;
+    }
+  }catch(e){}
+
+  // 4) محاولة fetch JSON كاحتياطي إضافي
+  if(!embedded){
+    try{
+      const url=encodeURI(currentCompany+".json")+"?t="+Date.now();
+      const res=await fetch(url, {cache:"no-store"});
+      if(res.ok){
+        const o=await res.json();
+        if(dataScore(o)>0) embedded=o;
+      }
+    }catch(e){}
+  }
+
+  const sCloud=dataScore(cloud), sLocal=dataScore(local), sEmb=dataScore(embedded);
+  let best=null, source="فارغ";
+
+  // الأولوية: الأغنى. إن تساوت النقاط فضّل السحابة ثم المحلي ثم المضمّن
+  const candidates=[
+    {d:cloud, s:sCloud, src:"سحابة"+(cloudAt?" · "+cloudAt:"")},
+    {d:local, s:sLocal, src:localSrc||"محلي"},
+    {d:embedded, s:sEmb, src:"بذرة مضمّنة"}
+  ].filter(x=>x.d && x.s>0);
+
+  if(candidates.length){
+    candidates.sort(function(a,b){
+      if(b.s!==a.s) return b.s-a.s;
+      // tie-break: cloud > local > embedded
+      const rank={}; rank["سحابة"]=3; rank["محلي"]=2; rank["بذرة مضمّنة"]=1;
+      const ra=Object.keys(rank).find(k=>a.src.indexOf(k)===0)||"";
+      const rb=Object.keys(rank).find(k=>b.src.indexOf(k)===0)||"";
+      return (rank[rb]||0)-(rank[ra]||0);
+    });
+    best=candidates[0].d;
+    source=candidates[0].src;
+  } else {
+    best=emptyCompanyDB();
+    source="فارغ";
+  }
+
+  // ارفع للسحابة فقط إذا كان ما لدينا أغنى من السحابة
+  if(best && dataScore(best)>0 && sb && user){
+    if(sCloud===0 || dataScore(best)>sCloud){
+      try{
+        await sb.from("company_data").upsert({
+          id: currentCompany, data: best,
+          updated_at: new Date().toISOString(),
+          updated_by: user.id
+        }, {onConflict:"id"});
+        if(source.indexOf("سحابة")!==0) source = source + " → رُفع للسحابة";
+      }catch(e){ console.warn("upload", e); }
+    }
+  }
+
+  companyDB = best || emptyCompanyDB();
+  // احفظ محلياً لتسريع الفتح التالي
+  try{
+    if(dataScore(companyDB)>0){
+      localStorage.setItem("acc_abu_"+currentCompany+"_v2", JSON.stringify(companyDB));
+    }
+  }catch(e){}
+
+  updateDataStatus(source, companyDB);
+  try{ if(typeof fillVItemPick==='function') fillVItemPick(); }catch(e){}
+  return companyDB;
+}
+
+function balOfItem(itemId){
+  const it=(companyDB.items||[]).find(i=>i.id===itemId);
+  let bal=it?num(it.openQty):0;
+  (companyDB.purchases||[]).forEach(p=>{if(p.itemId===itemId) bal+=num(p.qty)});
+  (companyDB.sales||[]).forEach(s=>{if(s.itemId===itemId) bal-=num(s.qty)});
+  (companyDB.customerReturns||[]).forEach(r=>{if(r.itemId===itemId) bal+=num(r.qty)});
+  (companyDB.supplierReturns||[]).forEach(r=>{if(r.itemId===itemId) bal-=num(r.qty)});
+  return bal;
+}
+function custRemain(cid){
+  let r=0;
+  (companyDB.sales||[]).forEach(s=>{if(s.customerId===cid && s.pay!=="كاش") r+=lineTotal(s.qty,s.price,s.disc)});
+  (companyDB.collections||[]).forEach(c=>{if(c.customerId===cid) r-=num(c.amt)});
+  (companyDB.customerReturns||[]).forEach(x=>{if(x.customerId===cid) r-=num(x.qty)*num(x.price)});
+  const cu=(companyDB.customers||[]).find(c=>c.id===cid);
+  if(cu) r+=num(cu.openBal!=null?cu.openBal:(cu.open||0));
+  return r;
+}
+
+function custLabel(c){
+  const parts=[c.name||""];
+  if(c.storeName||c.store) parts.push(c.storeName||c.store);
+  if(c.phone) parts.push(c.phone);
+  return parts.filter(Boolean).join(" · ");
+}
+
+/** أصناف متوفرة على السيارة فقط (رصيد > 0) */
+function itemsOnVehicle(){
+  const vstock = window._vStock || [];
+  const byId = {};
+  vstock.forEach(function(r){
+    const id = String(r.item_id || "");
+    if(!id) return;
+    byId[id] = (byId[id] || 0) + (typeof num==="function" ? num(r.qty) : parseFloat(r.qty)||0);
+  });
+  const items = (companyDB && companyDB.items) || [];
+  return items.filter(function(it){
+    return (byId[it.id] || 0) > 0.0001;
+  }).map(function(it){
+    return Object.assign({}, it, { _carQty: byId[it.id] || 0 });
+  });
+}
+function vehicleQtyOf(itemId){
+  const vstock = window._vStock || [];
+  let q = 0;
+  vstock.forEach(function(r){
+    if(String(r.item_id) === String(itemId)) q += (typeof num==="function" ? num(r.qty) : parseFloat(r.qty)||0);
+  });
+  return q;
+}
+
+function fillSelects(){
+  const custs=companyDB.customers||[];
+  // المبيعات: أصناف رصيد السيارة فقط
+  const items = (typeof itemsOnVehicle==="function") ? itemsOnVehicle() : (companyDB.items||[]);
+  const cOpts='<option value="">— اختر —</option>'+custs.map(c=>`<option value="${c.id}">${custLabel(c)}</option>`).join("");
+  s_cust.innerHTML=cOpts; c_cust.innerHTML=cOpts;
+  v_cust.innerHTML='<option value="">— بدون —</option>'+custs.map(c=>`<option value="${c.id}">${c.name}</option>`).join("");
+  if(!items.length){
+    s_item.innerHTML='<option value="">— لا أصناف على السيارة —</option>';
+  } else {
+    s_item.innerHTML='<option value="">— اختر من رصيد السيارة —</option>'+items.map(i=>{
+      const bc=(i.barcode)||(i.barcodes&&i.barcodes[0])||i.code||"";
+      const car=i._carQty!=null?i._carQty:(typeof vehicleQtyOf==="function"?vehicleQtyOf(i.id):"");
+      return `<option value="${i.id}" data-w="${i.w||0}" data-r="${i.r||0}" data-car="${car}">${bc?bc+" — ":""}${i.name} (سيارة: ${typeof fmt==="function"?fmt(car):car})</option>`;
+    }).join("");
+  }
+}
+function filterSelect(sel, q, list, labelFn){
+  const qq=(q||"").trim().toLowerCase();
+  const cur=sel.value;
+  const first = sel.id==="v_cust" ? '<option value="">— بدون —</option>' : '<option value="">— اختر —</option>';
+  sel.innerHTML=first;
+  list.filter(x=>!qq || labelFn(x).toLowerCase().includes(qq)).forEach(x=>{
+    const o=document.createElement("option"); o.value=x.id; o.textContent=labelFn(x);
+    if(x.w!=null) o.dataset.w=x.w; if(x.r!=null) o.dataset.r=x.r;
+    sel.appendChild(o);
+  });
+  if([...sel.options].some(o=>o.value===cur)) sel.value=cur;
+}
+s_cust_q.oninput=()=>filterSelect(s_cust,s_cust_q.value,companyDB.customers||[],c=>c.name);
+c_cust_q.oninput=()=>filterSelect(c_cust,c_cust_q.value,companyDB.customers||[],c=>c.name);
+v_cust_q.oninput=()=>filterSelect(v_cust,v_cust_q.value,companyDB.customers||[],c=>c.name);
+s_item_q.oninput=()=>filterSelect(s_item,s_item_q.value,(typeof itemsOnVehicle==='function'?itemsOnVehicle():(companyDB.items||[])),i=>{const bc=(i.barcode)||(i.barcodes&&i.barcodes[0])||""; const car=i._carQty!=null?i._carQty:''; return (bc?bc+" — ":"")+i.name+(car!==''?(' (سيارة: '+car+')'):'');});
+s_item.onchange=()=>{
+  const o=s_item.selectedOptions[0]; if(!o) return;
+  s_price.value = s_type.value==="تجزئة" ? (o.dataset.r||o.dataset.w||0) : (o.dataset.w||0);
+  if(typeof refreshSaleStockUI==="function") refreshSaleStockUI();
+  if(typeof recalcSaleNet==="function") recalcSaleNet();
+};
+s_type.onchange=()=>s_item.onchange();
+if(typeof s_qty!=='undefined'){ s_qty.oninput=()=>{ if(typeof recalcSaleNet==='function') recalcSaleNet(); }; }
+
+
+function renderStock(){
+  const q=(st_q.value||"").trim().toLowerCase();
+  const rows=(companyDB.items||[]).map(it=>({bc:(it.barcode)||(it.barcodes&&it.barcodes[0])||"",name:it.name,bal:balOfItem(it.id)}))
+    .filter(x=>!q || (x.name+x.code).toLowerCase().includes(q));
+  st_body.innerHTML=rows.map(x=>`<tr><td>${x.code||""}</td><td>${x.name}</td><td class="${x.bal<5?'st-rejected':''}">${fmt(x.bal)}</td></tr>`).join("")||"<tr><td colspan=3>لا بيانات</td></tr>";
+}
+st_q.oninput=renderStock;
+function renderAR(){
+  const q=(ar_q.value||"").trim().toLowerCase();
+  const rows=(companyDB.customers||[]).map(c=>({id:c.id, name:c.name, phone:c.phone||"", remain:custRemain(c.id)}))
+    .filter(x=>!q || x.name.toLowerCase().includes(q))
+    .sort((a,b)=>b.remain-a.remain);
+  ar_body.innerHTML=rows.map(x=>`<tr>
+    <td>${x.name}</td><td>${fmt(x.remain)}</td>
+    <td class="no-print"><button type="button" class="btn ghost" style="width:auto;padding:4px 8px;margin:0;font-size:.7rem" onclick="showStatement('${x.id}')">كشف</button></td>
+  </tr>`).join("")||"<tr><td colspan=3>لا عملاء</td></tr>";
+}
+ar_q.oninput=renderAR;
+
+async function notifyAdmins(title, body, ref_type, ref_id){
+  // إشعار لكل مستخدم إداري: نبقي نسخة للمندوب نفسه كسجل + نحاول إدراج لمن لديهم ملفات غير مندوبين
+  // عمليًا: نخزن إشعارًا في جدول عام عبر إدراج لـ user_id الخاص بالمندوب عند الرد،
+  // وللمسودة الجديدة نُدرج إشعارات لكل المستخدمين في rep_profiles النشطين؟ لا — للإدارة فقط.
+  // الحل البسيط: جدول الإشعارات يُقرأ من لوحة الإدارة لكل الإشعارات ذات kind=admin_alert بدون user محدد.
+  // نستخدم user_id = المندوب للإشعارات الموجّهة له، و user_id خاص للإدارة عبر قائمة.
+  try{
+    // جلب كل الملفات — الإدارة تستخدم نفس حساب Auth غالبًا
+    // نرسل إشعارًا إلى كل مستخدم ليس هو المندوب الحالي من خلال عدم التقييد:
+    // الأفضل: insert مع user_id للمندوب عند رد الإدارة، وللإدارة نستخدم realtime على الجداول مباشرة.
+    // إشعار المسودة الجديدة: ندرجه كـ kind draft_new مع user_id = rep (للسجل) + نترك لوحة الإدارة تعتمد على الاستعلام pending.
+  }catch(e){}
+}
+
+
+
+// ===== فاتورة: طباعة + واتساب =====
+function buildInvoice(data){
+  // data: {date, customer, phone, items:[{name,qty,price,disc}], pay, type, note, rep, company}
+  const lines=data.items||[];
+  let total=0;
+  invBody.innerHTML=lines.map(it=>{
+    const net=lineTotal(it.qty,it.price,it.disc);
+    total+=net;
+    return `<tr><td>${(function(){const id=it.item_id;const found=(companyDB&&companyDB.items||[]).find(i=>i.id===id||i.name===it.name);const bc=found?((found.barcode)||(found.barcodes&&found.barcodes[0])||""):""; return (bc?bc+" · ":"")+(it.name||"");})()}</td><td>${fmt(it.qty)}</td><td>${fmt(it.price)}</td><td>${fmt(it.disc||0)}</td><td>${fmt(net)}</td></tr>`;
+  }).join("")||'<tr><td colspan="5">—</td></tr>';
+  invMeta.innerHTML=`
+    <div>التاريخ: <b>${data.date||""}</b></div>
+    <div>العميل: <b>${data.customer||""}</b>${data.phone? " · هاتف: "+data.phone:""}</div>
+    <div>الشركة: <b>${data.company||""}</b> · المندوب: <b>${data.rep||""}</b></div>
+    <div>الدفع: <b>${data.pay||""}</b>${data.type? " · "+data.type:""}</div>
+    ${data.note?`<div>ملاحظة: ${data.note}</div>`:""}`;
+  invTotal.innerHTML="الإجمالي: "+fmt(total);
+  invFoot.innerHTML="<br/>مسودة "+jobTitleFor((profile&&profile.name)||"")+" — تُعتمد من الإدارة";
+  return total;
+}
+
+function lineNet(it){
+  const q=num(it.qty), p=num(it.price), d=num(it.disc), da=num(it.discAmt||it.disc_amt);
+  let n = q*p;
+  if(d) n = n*(1-d/100);
+  n = n - (da||0);
+  return Math.max(0,n);
+}
+function printInvoice(data){
+  if(!data){ alert("لا توجد فاتورة"); return; }
+  const items = data.items || [];
+  const total = items.reduce((a,it)=>a+lineNet(it),0);
+  const box = document.getElementById("invPrint");
+  if(!box){ alert("منطقة الطباعة غير موجودة"); return; }
+  const unitOf = (it)=>{
+    if(it.unit) return it.unit;
+    const found=(companyDB&&companyDB.items||[]).find(i=>i.id===it.item_id || i.name===it.name);
+    return (found&&found.unit)||"قطعة";
+  };
+  const hasDisc = items.some(it=>num(it.disc)>0 || num(it.discAmt||it.disc_amt)>0);
+  const coLabel = (typeof companyLabel==="function"?companyLabel(currentCompany):currentCompany)||"";
+  box.innerHTML = `
+    <div class="inv-sheet-print">
+      <div class="inv-h1">أبو يونس للتجارة والتوزيع</div>
+      <div class="inv-h2">فاتورة مبيعات</div>
+      ${coLabel?('<div class="inv-reg">'+coLabel+'</div>'):''}
+      <hr class="inv-dash"/>
+      <div class="inv-meta-grid">
+        <div class="inv-col-r">
+          <div><span class="lbl">العميل:</span> ${data.customer||"—"}</div>
+          <div><span class="lbl">المتجر:</span> ${data.storeName||"—"}</div>
+          <div><span class="lbl">العنوان:</span> ${data.address||"—"}</div>
+          <div><span class="lbl">تليفون:</span> ${data.phone||"—"}</div>
+        </div>
+        <div class="inv-col-l">
+          <div><span class="lbl">المندوب:</span> ${data.rep||(profile&&profile.name)||"—"}</div>
+          <div><span class="lbl">تليفون المندوب:</span> ${data.repPhone||(profile&&profile.phone)||"—"}</div>
+          <div><span class="lbl">التاريخ:</span> ${data.date||"—"}</div>
+          <div><span class="lbl">الدفع:</span> ${data.pay||"—"}</div>
+        </div>
+      </div>
+      <hr class="inv-dash"/>
+      <table class="inv-table">
+        <thead>
+          <tr>
+            <th>الصنف</th>
+            <th>وحدة</th>
+            <th>كمية</th>
+            <th>سعر</th>
+            ${hasDisc?'<th>خصم</th>':''}
+            <th>صافي</th>
+          </tr>
+        </thead>
+        <tbody>
+          ${items.map(it=>{
+            const discTxt = (num(it.disc)>0? (fmt(it.disc)+"%") : "") + (num(it.discAmt||it.disc_amt)>0? (" "+fmt(it.discAmt||it.disc_amt)) : "");
+            return `<tr>
+            <td>${it.name||""}</td>
+            <td>${unitOf(it)}</td>
+            <td>${fmt(it.qty)}</td>
+            <td>${fmt(it.price)}</td>
+            ${hasDisc?('<td>'+(discTxt||"—")+'</td>'):''}
+            <td>${fmt(lineNet(it))}</td>
+          </tr>`;
+          }).join("")||`<tr><td colspan="6" style="text-align:center">—</td></tr>`}
+        </tbody>
+      </table>
+      <div class="inv-total">الإجمالي: ${fmt(total)}</div>
+      <div class="inv-disclaimer">الشركة غير مسئولة عن سوء الحفظ والتخزين</div>
+      <div class="inv-reg">س . ت: 52500 — ب . ض: 781148502</div>
+    </div>
+  `;
+  box.classList.add("print-now");
+  box.style.display="block";
+  document.body.classList.add("printing-inv");
+  tryPrintThermal75().finally(function(){
+    setTimeout(function(){
+      document.body.classList.remove("printing-inv");
+      box.classList.remove("print-now");
+      box.style.display="none";
+    }, 1200);
+  });
+}
+
+async function tryPrintThermal75(){
+  try{
+    // تنبيه مرة واحدة: اختر الطابعة الحرارية 58مم في حوار الطباعة
+    if(!sessionStorage.getItem("ay_thermal_hint")){
+      sessionStorage.setItem("ay_thermal_hint","1");
+      // لا نمنع الطباعة — رسالة قصيرة اختيارية
+    }
+  }catch(e){}
+  return new Promise(function(resolve){
+    setTimeout(function(){
+      try{ window.print(); }catch(e){ console.warn(e); }
+      resolve(true);
+    }, 180);
+  });
+}
+
+function invoiceWhatsAppText(data){
+  const items=data.items||[];
+  const lines=[
+    "ابو يونس للتجارة والتوزيع",
+    "فاتورة مبيعات",
+    "العميل: "+(data.customer||""),
+    "تليفون: "+(data.phone||""),
+    "العنوان: "+(data.address||""),
+    "التاريخ: "+(data.date||""),
+    "المندوب: "+(data.rep||""),
+    "تليفون المندوب: "+(data.repPhone||""),
+    "الدفع: "+(data.pay||""),
+    "———"
+  ];
+  items.forEach(it=>{
+    lines.push((it.name||"")+" × "+it.qty+" × "+it.price+" = "+(typeof lineNet==="function"?lineNet(it):(num(it.qty)*num(it.price))));
+  });
+  const total=items.reduce((a,it)=>a+(typeof lineNet==="function"?lineNet(it):num(it.qty)*num(it.price)),0);
+  lines.push("الإجمالي: "+total);
+  lines.push("الشركة غير مسئولة عن سوء الحفظ والتخزين");
+  return lines.join("\n");
+}
+
+function sendInvoiceWhatsApp(data, phone){
+  const text=invoiceWhatsAppText(data);
+  let ph=(phone||"").replace(/\D/g,"");
+  if(ph.startsWith("00")) ph=ph.slice(2);
+  if(ph.startsWith("0") && ph.length>=10) ph="20"+ph.slice(1); // مصر
+  const url = ph
+    ? `https://wa.me/${ph}?text=${encodeURIComponent(text)}`
+    : `https://wa.me/?text=${encodeURIComponent(text)}`;
+  window.open(url, "_blank");
+}
+
+function currentSaleInvoiceData(extra){
+  const cid=s_cust.value;
+  const cust=(companyDB.customers||[]).find(c=>c.id===cid)||{};
+  const items = saleCart.length ? saleCart.map(x=>({
+    name:x.name, qty:x.qty, price:x.price, disc:x.disc, discAmt:x.discAmt, item_id:x.item_id
+  })) : (s_item.value ? [{
+    name: ((companyDB.items||[]).find(i=>i.id===s_item.value)||{}).name||"",
+    qty:num(s_qty.value), price:num(s_price.value), disc:num(s_disc.value),
+    discAmt:num(s_disc_amt&&s_disc_amt.value)
+  }] : []);
+  return Object.assign({
+    date: s_date.value||today(),
+    customer: cust.name||"",
+    storeName: cust.storeName||cust.store||"",
+    phone: cust.phone||"",
+    address: cust.address||cust.addr||"",
+    company: currentCompany,
+    rep: (profile&&profile.name)||"",
+    repPhone: (function(){
+      let ph=(profile&&profile.phone)||"";
+      if(ph) return ph;
+      try{
+        const nm=(profile&&profile.name)||"";
+        const emp=((companyDB&&companyDB.employees)||[]).find(e=>e.name&&nm&&(e.name===nm||e.name.indexOf(nm)>=0||nm.indexOf(e.name)>=0));
+        if(emp&&emp.phone) return emp.phone;
+      }catch(e){}
+      return "";
+    })(),
+    pay: s_pay.value,
+    note: s_note.value||"",
+    items
+  }, extra||{});
+}
+
+function showSaleActions(data){
+  let bar=$("saleActionsBar");
+  if(!bar){
+    bar=document.createElement("div");
+    bar.id="saleActionsBar";
+    bar.className="sale-actions no-print";
+    const msg=$("s_msg");
+    if(msg&&msg.parentNode) msg.parentNode.insertBefore(bar, msg.nextSibling);
+  }
+  window.__lastInv=data;
+  bar.style.display="flex";
+  bar.innerHTML=`
+    <button type="button" class="btn btn-print" id="btnInvPrint">🖨 طباعة الفاتورة</button>
+    <button type="button" class="btn g" id="btnInvWa">📲 واتساب للعميل</button>`;
+  const bp=$("btnInvPrint"), bw=$("btnInvWa");
+  if(bp) bp.onclick=()=>printInvoice(window.__lastInv);
+  if(bw) bw.onclick=()=>{
+    let phone=(window.__lastInv&&window.__lastInv.phone)||"";
+    if(!phone) phone=prompt("رقم واتساب العميل (مثال 010xxxxxxxx):","")||"";
+    sendInvoiceWhatsApp(window.__lastInv, phone);
+  };
+}
+
+
+// ===== باركود + تسعير =====
+function findItemByBarcode(code){
+  const c=String(code||"").trim();
+  if(!c) return null;
+  const items=companyDB.items||[];
+  const match = (i)=>{
+    if(String(i.code||"")===c || String(i.barcode||"")===c) return true;
+    if(Array.isArray(i.barcodes) && i.barcodes.some(b=>String(b)===c)) return true;
+    return false;
+  };
+  const ends = (i)=>{
+    if(String(i.code||"").endsWith(c) || String(i.barcode||"").endsWith(c)) return true;
+    if(Array.isArray(i.barcodes) && i.barcodes.some(b=>String(b).endsWith(c))) return true;
+    return false;
+  };
+  return items.find(match) || items.find(ends) || null;
+}
+function priceForItem(it, saleType){
+  if(!it) return 0;
+  return saleType==="تجزئة" ? num(it.r||it.w||0) : num(it.w||it.r||0);
+}
+function recalcSaleNet(){
+  const qty=num(s_qty.value), price=num(s_price.value);
+  const discPct=num(s_disc.value), discAmt=num(s_disc_amt.value);
+  let gross=qty*price;
+  let net=gross;
+  if(discAmt>0) net=Math.max(0, gross-discAmt);
+  else if(discPct>0) net=gross*(1-discPct/100);
+  if($("s_net")) s_net.value = (Math.round(net*1000)/1000);
+  return net;
+}
+function applyItemToSale(it){
+  if(!it) return;
+  // select in dropdown
+  fillSelects();
+  s_item.value=it.id;
+  const t=s_type.value;
+  s_price.value=priceForItem(it, t);
+  (document.getElementById("s_stock_wh")||{}).value=fmt(balOfItem(it.id));
+  recalcSaleNet();
+}
+function onBarcodeSale(code){
+  const it=findItemByBarcode(code);
+  if(!it){ s_msg.className="msg err"; s_msg.textContent="صنف غير موجود للباركود: "+code; return; }
+  s_barcode.value=code;
+  applyItemToSale(it);
+  s_msg.className="msg ok"; s_msg.textContent="تم: "+(it.name||"")+" · السعر "+s_price.value;
+  s_qty.focus();
+}
+function onBarcodeQuery(code){
+  const it=findItemByBarcode(code);
+  const box=$("q_result");
+  if(!it){ box.innerHTML='<span style="color:var(--r)">صنف غير موجود: '+code+"</span>"; return; }
+  const t=q_type.value;
+  const price=priceForItem(it, t);
+  const bal=balOfItem(it.id);
+  box.innerHTML=`
+    <div>الكود: <b>${it.code||""}</b> · باركود: <b>${it.barcode||it.code||""}</b></div>
+    <div>الصنف: <b>${it.name||""}</b></div>
+    <div>الفئة: <b>${t}</b></div>
+    <div>السعر: <b>${fmt(price)}</b></div>
+    <div>رصيد المخزن: <b class="${bal<5?"st-rejected":""}">${fmt(bal)}</b></div>
+    <div class="muted">جملة: ${fmt(it.w||0)} · تجزئة: ${fmt(it.r||0)}</div>`;
+}
+
+let __scanner=null, __scanTarget=null;
+async function startScan(target, boxId){
+  const box=$(boxId); if(!box) return;
+  stopScan();
+  __scanTarget=target;
+  box.style.display="block";
+  box.innerHTML="";
+  if(typeof Html5Qrcode==="undefined"){
+    box.innerHTML='<div style="color:#fff;padding:12px">تعذر تحميل مكتبة المسح — اكتب الباركود يدويًا</div>';
+    return;
+  }
+  __scanner=new Html5Qrcode(boxId);
+  try{
+    await __scanner.start(
+      {facingMode:"environment"},
+      {fps:10, qrbox:{width:250, height:120}},
+      (decoded)=>{
+        if(__scanTarget==="sale") onBarcodeSale(decoded);
+        else onBarcodeQuery(decoded);
+        stopScan();
+      },
+      ()=>{}
+    );
+  }catch(e){
+    box.innerHTML='<div style="color:#fff;padding:12px">تعذر فتح الكاميرا: '+(e.message||e)+'</div>';
+  }
+}
+async function stopScan(){
+  if(__scanner){
+    try{ await __scanner.stop(); __scanner.clear(); }catch(e){}
+    __scanner=null;
+  }
+  if($("s_scan_box")) s_scan_box.style.display="none";
+  if($("q_scan_box")) q_scan_box.style.display="none";
+}
+
+
+
+// ===== كشف حساب عميل =====
+let __stmt = null; // {customer, phone, rows, remain, text}
+
+function buildCustomerStatement(customerId){
+  const cu=(companyDB.customers||[]).find(c=>c.id===customerId);
+  if(!cu) return null;
+  const rows=[];
+  let bal=num(cu.openBal!=null?cu.openBal:(cu.open||0));
+  if(bal) rows.push({date:"", type:"رصيد أول", desc:"افتتاحي", debit:bal>0?bal:0, credit:bal<0?-bal:0, bal});
+
+  const moves=[];
+  (companyDB.sales||[]).filter(s=>s.customerId===customerId).forEach(s=>{
+    const amt=lineTotal(s.qty,s.price,s.disc,s.discAmt);
+    if(s.pay==="كاش") return; // الكاش لا يضيف مديونية
+    moves.push({date:s.date||"", type:"بيع", desc:(s.itemName||"")||findItemName(s.itemId), debit:amt, credit:0, sort:s.date||""});
+  });
+  (companyDB.collections||[]).filter(c=>c.customerId===customerId).forEach(c=>{
+    moves.push({date:c.date||"", type:"تحصيل", desc:c.note||c.method||"", debit:0, credit:num(c.amt), sort:c.date||""});
+  });
+  (companyDB.customerReturns||[]).filter(r=>r.customerId===customerId).forEach(r=>{
+    const amt=num(r.qty)*num(r.price);
+    moves.push({date:r.date||"", type:"مرتجع", desc:findItemName(r.itemId)||"", debit:0, credit:amt, sort:r.date||""});
+  });
+  moves.sort((a,b)=>String(a.sort).localeCompare(String(b.sort)));
+  moves.forEach(m=>{
+    bal += num(m.debit) - num(m.credit);
+    rows.push({date:m.date, type:m.type, desc:m.desc, debit:m.debit, credit:m.credit, bal});
+  });
+  return {customer:cu.name, phone:cu.phone||"", id:cu.id, rows, remain:bal};
+}
+function findItemName(id){
+  const it=(companyDB.items||[]).find(i=>i.id===id);
+  return it?it.name:"";
+}
+function showStatement(customerId){
+  const st=buildCustomerStatement(customerId);
+  if(!st) return;
+  __stmt=st;
+  stmtCard.style.display="block";
+  stmtMeta.textContent = st.customer + (st.phone?" · "+st.phone:"") + " · " + currentCompany;
+  stmtBody.innerHTML=st.rows.map(r=>`<tr>
+    <td>${r.date||"—"}</td><td>${r.type}</td><td>${r.desc||""}</td>
+    <td>${r.debit?fmt(r.debit):"—"}</td><td>${r.credit?fmt(r.credit):"—"}</td>
+    <td><b>${fmt(r.bal)}</b></td></tr>`).join("")||'<tr><td colspan="6">لا حركات</td></tr>';
+  stmtTotal.innerHTML="المتبقي النهائي: <b style='color:var(--o)'>"+fmt(st.remain)+"</b>";
+  stmtCard.scrollIntoView({behavior:"smooth"});
+}
+function statementWhatsAppText(st){
+  const lines=st.rows.slice(-30).map(r=>
+    `${r.date||"—"} | ${r.type} | ${r.desc||""} | م:${fmt(r.debit||0)} د:${fmt(r.credit||0)} ر:${fmt(r.bal)}`
+  ).join("\n");
+  return (
+`*أبو يونس للتجارة والتوكيلات*
+كشف حساب عميل
+
+العميل: ${st.customer}
+الشركة: ${currentCompany}
+المندوب: ${(profile&&profile.name)||""}
+
+${lines}
+
+*المتبقي: ${fmt(st.remain)}*
+
+شكراً لتعاملكم معنا`
+  ).trim();
+}
+function printStatement(){
+  if(!__stmt) return;
+  stmtPrintMeta.innerHTML=`<div>العميل: <b>${__stmt.customer}</b>${__stmt.phone?" · "+__stmt.phone:""}</div>
+    <div>الشركة: <b>${currentCompany}</b> · المندوب: <b>${(profile&&profile.name)||""}</b></div>
+    <div>تاريخ الطباعة: ${new Date().toLocaleString("ar-EG")}</div>`;
+  stmtPrintBody.innerHTML=__stmt.rows.map(r=>`<tr>
+    <td>${r.date||"—"}</td><td>${r.type}</td><td>${r.desc||""}</td>
+    <td>${r.debit?fmt(r.debit):"—"}</td><td>${r.credit?fmt(r.credit):"—"}</td>
+    <td>${fmt(r.bal)}</td></tr>`).join("");
+  stmtPrintTotal.innerHTML="المتبقي: "+fmt(__stmt.remain);
+  const box=$("stmtPrintArea");
+  box.classList.add("print-now");
+  document.body.classList.add("printing-inv");
+  setTimeout(()=>{ window.print(); setTimeout(()=>{ box.classList.remove("print-now"); document.body.classList.remove("printing-inv"); },300); },150);
+}
+function sendStatementWhatsApp(){
+  if(!__stmt) return;
+  let phone=__stmt.phone||"";
+  if(!phone) phone=prompt("رقم واتساب العميل:","")||"";
+  const text=statementWhatsAppText(__stmt);
+  let ph=(phone||"").replace(/\D/g,"");
+  if(ph.startsWith("00")) ph=ph.slice(2);
+  if(ph.startsWith("0") && ph.length>=10) ph="20"+ph.slice(1);
+  const url=ph?`https://wa.me/${ph}?text=${encodeURIComponent(text)}`:`https://wa.me/?text=${encodeURIComponent(text)}`;
+  window.open(url,"_blank");
+}
+
+async function saveExpense(){
+  e_msg.textContent=""; e_msg.className="msg";
+  try{
+    const desc=(e_desc.value||"").trim();
+    const amt=num(e_amt.value);
+    if(!desc||amt<=0) throw new Error("أكمل البيان والمبلغ");
+    const row={
+      rep_id:user.id, company:currentCompany,
+      exp_date:e_date.value||today(),
+      desc:desc, cat:e_cat.value||"أخرى", amt:amt,
+      note:e_note.value||"", status:"pending"
+    };
+    if(!isOnline()){
+      enqueue("expense", row, desc+" · "+amt);
+      e_msg.className="msg ok"; e_msg.textContent="حُفظ أوفلاين — سيُزامَن لاحقًا";
+      e_amt.value=""; e_note.value=""; e_desc.value=""; updateQBadge(); return;
+    }
+    try{
+      // أرسل بعدة أسماء حقول ليتوافق مع مخطط قاعدة البيانات
+      const row2={
+        rep_id:user.id,
+        company:normalizeCompany(currentCompany)||currentCompany,
+        exp_date:e_date.value||today(),
+        desc:desc,
+        description:desc,
+        title:desc,
+        cat:e_cat.value||"أخرى",
+        amt:amt,
+        note:e_note.value||desc,
+        status:"pending"
+      };
+      const {data,error}=await insertDraft("rep_expenses_draft", row2);
+      if(error) throw error;
+      try{
+        await sb.from("rep_notifications").insert({
+          user_id:user.id, title:"تم إرسال مسودة مصروف",
+          body:desc+" · "+amt+" · بانتظار الاعتماد",
+          kind:"draft_sent", ref_type:"expense", ref_id:(data&&data.id)||null
+        });
+      }catch(ne){}
+      e_msg.className="msg ok"; e_msg.textContent="تم الإرسال — بانتظار اعتماد الإدارة";
+      if(window.AYNotify) AYNotify.both("مسودة مصروف — "+(profile&&profile.name||"مندوب"), desc+" · "+amt+" · "+currentCompany);
+      e_amt.value=""; e_note.value=""; e_desc.value="";
+    }catch(netErr){
+      enqueue("expense", row, desc+" · "+amt);
+      const em=(netErr&&(netErr.message||netErr.error_description))||String(netErr||"");
+      e_msg.className="msg ok";
+      e_msg.textContent="تعذر الإرسال للسحابة — حُفظ أوفلاين"+(em?(" · "+em.slice(0,120)):"");
+      e_amt.value=""; e_note.value=""; e_desc.value=""; updateQBadge(); return;
+    }
+    loadMyHistory();
+  }catch(e){ e_msg.className="msg err"; e_msg.textContent=e.message||String(e); }
+}
+
+
+// ===== سلة أصناف الفاتورة (متعدد) =====
+let saleCart = [];
+function cartLineNet(line){
+  let n = num(line.qty)*num(line.price);
+  if(num(line.disc)) n = n*(1-num(line.disc)/100);
+  n -= num(line.discAmt||0);
+  return Math.max(0,n);
+}
+function renderCart(){
+  const body = document.getElementById("s_cart_body");
+  const tot = document.getElementById("s_cart_total");
+  if(!body) return;
+  if(!saleCart.length){
+    body.innerHTML='<tr><td colspan="5" class="muted">لا أصناف بعد — أضف صنفاً ثم اضغط «إضافة للفاتورة»</td></tr>';
+    if(tot) tot.textContent="0";
+    return;
+  }
+  body.innerHTML = saleCart.map((x,i)=>`<tr>
+    <td>${x.name||""}</td><td>${fmt(x.qty)}</td><td>${fmt(x.price)}</td><td>${fmt(cartLineNet(x))}</td>
+    <td><button type="button" class="btn ghost" style="padding:4px 8px;margin:0;width:auto" data-rm="${i}">حذف</button></td>
+  </tr>`).join("");
+  body.querySelectorAll("[data-rm]").forEach(b=>b.onclick=()=>{ saleCart.splice(+b.dataset.rm,1); renderCart(); });
+  if(tot) tot.textContent = fmt(saleCart.reduce((a,x)=>a+cartLineNet(x),0));
+}
+async function addLineToCart(){
+  const iid = s_item.value;
+  if(!iid || num(s_qty.value)<=0){ alert("اختر صنفاً وكمية"); return; }
+  const item = (companyDB.items||[]).find(i=>i.id===iid)||{};
+  const qty=num(s_qty.value), price=num(s_price.value);
+  if(priceBelowCost(iid, price)){
+    // تنبيه فقط بدون أرقام — السعر التلقائي من قائمة الأسعار قد يكون أقل من متوسط شراء قديم
+    if(s_msg){ s_msg.className="msg err"; s_msg.textContent="تنبيه: سعر البيع أقل من التكلفة — راجع السعر"; }
+    if(!confirm("تنبيه: سعر البيع يبدو أقل من التكلفة.\nهل تريد إضافة الصنف رغم ذلك؟")) return;
+  }
+  const carBal=await vehicleBalOf(iid);
+  if(carBal<=0){
+    if(s_msg){ s_msg.className="msg err"; s_msg.textContent="الصنف غير متوفر على السيارة"; }
+    return;
+  }
+  const already=saleCart.filter(x=>x.item_id===iid).reduce((a,x)=>a+num(x.qty),0);
+  if(carBal+1e-9 < already+qty){
+    if(s_msg){ s_msg.className="msg err"; s_msg.textContent="الكمية أكبر من رصيد السيارة (متاح "+fmt(Math.max(0,carBal-already))+")"; }
+    else alert("لا يمكن البيع: الكمية أكبر من رصيد السيارة (متاح "+fmt(Math.max(0,carBal-already))+")");
+    return;
+  }
+  saleCart.push({
+    item_id: iid,
+    item_code: item.code||"",
+    name: item.name|| (s_item.selectedOptions[0]&&s_item.selectedOptions[0].textContent)||"",
+    qty: num(s_qty.value),
+    price: num(s_price.value),
+    disc: num(s_disc.value),
+    discAmt: num(s_disc_amt&&s_disc_amt.value),
+    sale_type: s_type.value
+  });
+  renderCart();
+  s_qty.value=1; s_disc.value=0; if(s_disc_amt) s_disc_amt.value=0; s_note.value=s_note.value;
+  s_msg.className="msg ok"; s_msg.textContent="أُضيف للفاتورة · الأصناف: "+saleCart.length;
+}
+
+
+// ===== أرصدة مخزن / سيارة =====
+
+/** تكلفة داخلية للمقارنة فقط — لا تُعرض أرقامها للمندوب */
+function itemCost(itemId){
+  const it=(companyDB.items||[]).find(i=>i.id===itemId);
+  if(!it) return 0;
+  if(it.avgCost!=null && num(it.avgCost)>0) return num(it.avgCost);
+  if(it.cost!=null && num(it.cost)>0) return num(it.cost);
+  let qty=0, val=0;
+  (companyDB.purchases||[]).forEach(p=>{
+    if(p.itemId!==itemId) return;
+    const q=num(p.qty); if(q<=0) return;
+    let unit=num(p.price);
+    // طبّق خصم الشراء إن وُجد
+    if(num(p.disc)>0) unit = unit*(1-num(p.disc)/100);
+    if(num(p.discAmt)>0 && q>0) unit = Math.max(0, unit - num(p.discAmt)/q);
+    qty+=q; val+=q*unit;
+  });
+  if(qty>0) return val/qty;
+  return 0;
+}
+function priceBelowCost(itemId, price){
+  const c=itemCost(itemId);
+  if(!(c>0)) return false;
+  const p=num(price);
+  // إذا السعر يطابق سعر الجملة/التجزئة المسجّل للصنف فلا تمنع
+  const it=(companyDB.items||[]).find(i=>i.id===itemId);
+  if(it){
+    const w=num(it.w||it.wholesale||it.priceW);
+    const r=num(it.r||it.retail||it.priceR);
+    if((w>0 && Math.abs(p-w)<0.02) || (r>0 && Math.abs(p-r)<0.02)) return false;
+  }
+  // هامش تسامح بسيط للحسابات الكسرية
+  return p + 0.05 < c;
+}
+
+async function vehicleBalOf(itemId){
+  try{
+    if(!sb||!user||!itemId) return 0;
+    const {data}=await sb.from("rep_vehicle_stock").select("qty").eq("rep_id",user.id).eq("company",currentCompany).eq("item_id",itemId).maybeSingle();
+    return num(data&&data.qty);
+  }catch(e){ return 0; }
+}
+async function refreshSaleStockUI(){
+  const iid=s_item&&s_item.value;
+  const whEl=document.getElementById("s_stock_wh");
+  const carEl=document.getElementById("s_stock_car");
+  if(!iid){
+    if(whEl) whEl.value="";
+    if(carEl) carEl.value="";
+    return;
+  }
+  const wh=typeof balOfItem==="function"?balOfItem(iid):0;
+  const car=await vehicleBalOf(iid);
+  if(whEl) whEl.value=fmt(wh);
+  if(carEl) carEl.value=fmt(car);
+  const price=num(s_price&&s_price.value);
+  if(price>0 && priceBelowCost(iid, price)){
+    if(s_msg){ s_msg.className="msg err"; s_msg.textContent="تنبيه: سعر البيع أقل من التكلفة — راجع السعر قبل الإرسال"; }
+  } else if(s_msg && s_msg.textContent && s_msg.textContent.indexOf("أقل من التكلفة")>=0){
+    s_msg.className="msg"; s_msg.textContent="";
+  }
+}
+
+
+async function insertDraft(table, row){
+  if(!sb) return {data:null, error:{message:"لا اتصال Supabase"}};
+  const base = Array.isArray(row) ? {...row[0]} : {...row};
+  // تطبيع أسماء الحقول الشائعة
+  if(table==="rep_expenses_draft"){
+    const text = base.desc || base.description || base.title || base.note || "";
+    if(text && !base.note) base.note = text;
+    // PostgreSQL/PostgREST: عمود desc يحتاج الاقتباس — نرسل description و note كبدائل
+  }
+  const attempts = [];
+  const push = (o)=>{ if(o && typeof o==="object") attempts.push(o); };
+
+  push({...base});
+
+  if(table==="rep_expenses_draft"){
+    const text = base.desc || base.description || base.title || base.note || "";
+    // محاولات بترتيبات أعمدة مختلفة حسب مخططات متعددة
+    push({ rep_id:base.rep_id, company:base.company, exp_date:base.exp_date, description:text, cat:base.cat||"أخرى", amt:base.amt, note:base.note||text, status:"pending" });
+    push({ rep_id:base.rep_id, company:base.company, exp_date:base.exp_date, title:text, cat:base.cat||"أخرى", amt:base.amt, note:base.note||"", status:"pending" });
+    push({ rep_id:base.rep_id, company:base.company, exp_date:base.exp_date, note:text, cat:base.cat||"أخرى", amt:base.amt, status:"pending" });
+    push({ rep_id:base.rep_id, exp_date:base.exp_date, note:text, amt:base.amt, status:"pending" });
+    push({ rep_id:base.rep_id, company:base.company, exp_date:base.exp_date, desc:text, cat:base.cat||"أخرى", amt:base.amt, status:"pending" });
+    push({ rep_id:base.rep_id, exp_date:base.exp_date, desc:text, amt:base.amt, status:"pending" });
+  }
+
+  if(table==="rep_collections_draft"){
+    push({ rep_id:base.rep_id, company:base.company, col_date:base.col_date, customer_id:base.customer_id, customer_name:base.customer_name, amt:base.amt, method:base.method||"كاش", note:base.note||"", status:"pending" });
+    push({ rep_id:base.rep_id, col_date:base.col_date, customer_name:base.customer_name, amt:base.amt, method:base.method||"كاش", status:"pending" });
+    push({ rep_id:base.rep_id, company:base.company, col_date:base.col_date, customer_name:base.customer_name, amt:base.amt, status:"pending" });
+  }
+
+  if(table==="rep_sales_draft"){
+    push({ rep_id:base.rep_id, company:base.company, sale_date:base.sale_date, customer_name:base.customer_name||"", item_name:base.item_name||"", qty:base.qty, price:base.price, disc:base.disc||0, pay:base.pay||"آجل", status:"pending", note:base.note||"" });
+    push({ rep_id:base.rep_id, sale_date:base.sale_date, customer_name:base.customer_name||"", item_name:base.item_name||"", qty:base.qty, price:base.price, disc:base.disc||0, pay:base.pay||"آجل", status:"pending" });
+  }
+
+  if(table==="rep_vehicle_load_draft"){
+    const bc = base.barcode || base.item_code || base.item_id || "NA";
+    push({ ...base, barcode: bc });
+    push({ rep_id:base.rep_id, company:base.company, load_date:base.load_date, item_id:base.item_id||"", item_name:base.item_name||"", item_code:base.item_code||"", barcode:bc, qty:base.qty, note:base.note||"", status:"pending" });
+    push({ rep_id:base.rep_id, load_date:base.load_date, item_name:base.item_name||"", barcode:bc, qty:base.qty, status:"pending" });
+  }
+
+  // إسقاط أعمدة اختيارية تدريجياً
+  const optional = ["inv","item_id","disc_amt","discAmt","sale_type","company","note","customer_id","item_code","desc","description","title","cat","barcode"];
+  for(let i=0;i<optional.length;i++){
+    const o={...base};
+    optional.slice(0,i+1).forEach(k=>delete o[k]);
+    push(o);
+  }
+
+  let r=null, lastErr=null;
+  const seen=new Set();
+  for(const payload of attempts){
+    try{
+      // احذف المفاتيح undefined
+      Object.keys(payload).forEach(k=>{ if(payload[k]===undefined) delete payload[k]; });
+      const key=JSON.stringify(Object.keys(payload).sort());
+      if(seen.has(key)) continue;
+      seen.add(key);
+      r = await sb.from(table).insert(payload).select("id").maybeSingle();
+      if(!r.error){ return r; }
+      lastErr = r.error;
+      // RLS أو شبكة — لا تُجدِ المحاولة بأعمدة أخرى
+      if(/row-level security|JWT|network|Failed to fetch|Load failed/i.test(r.error.message||"")) break;
+    }catch(e){
+      lastErr = {message: e.message||String(e)};
+    }
+  }
+
+  if(table==="rep_vehicle_load_draft" && r && !r.error){
+    try{
+      const key="ay_pending_vloads";
+      let arr=JSON.parse(localStorage.getItem(key)||"[]");
+      const fp=(x)=>[String(x.rep_id||""),String(x.item_id||x.item_name||""),String(x.load_date||"").slice(0,10),String(num(x.qty))].join("|");
+      const target=fp(base);
+      arr=arr.filter(x=>fp(x)!==target);
+      localStorage.setItem(key, JSON.stringify(arr));
+    }catch(e){}
+  }
+  return r || {data:null, error:lastErr||{message:"فشل الإدراج"}};
+}
+
+async function saveSale(){
+  s_msg.textContent=""; s_msg.className="msg";
+  if(window.__saleBusy){ s_msg.className="msg err"; s_msg.textContent="جاري الإرسال... انتظر"; return; }
+  window.__saleBusy=true;
+  const saveBtn=document.getElementById("s_save");
+  if(saveBtn){ saveBtn.disabled=true; saveBtn.textContent="جاري الإرسال..."; }
+  try{
+    const cid=s_cust.value;
+    if(!cid) throw new Error("اختر العميل");
+    // إن لم تُضف أصناف للسلة لكن يوجد صنف حالي — أضفه تلقائياً
+    if(!saleCart.length && s_item.value && num(s_qty.value)>0){
+      addLineToCart();
+    }
+    if(!saleCart.length) throw new Error("أضف صنفاً واحداً على الأقل للفاتورة");
+    // التحقق: تكلفة (بدون أرقام) + رصيد السيارة
+    for(const line of saleCart){
+      if(priceBelowCost(line.item_id, line.price))
+        throw new Error("لا يمكن الإرسال: سعر البيع أقل من التكلفة لصنف في الفاتورة");
+      const carBal=await vehicleBalOf(line.item_id);
+      const need=saleCart.filter(x=>x.item_id===line.item_id).reduce((a,x)=>a+num(x.qty),0);
+      if(carBal+1e-9<need)
+        throw new Error("رصيد السيارة غير كافٍ للصنف: "+(line.name||"")+" (متاح "+fmt(carBal)+")");
+    }
+    const cust=(companyDB.customers||[]).find(c=>c.id===cid)||{};
+    const invData = {
+      date: s_date.value||today(),
+      customer: cust.name||"",
+      storeName: cust.storeName||cust.store||"",
+      phone: cust.phone||"",
+      address: cust.address||cust.addr||"",
+      company: currentCompany,
+      rep: (profile&&profile.name)||"",
+      repPhone: (profile&&profile.phone)||"",
+      pay: s_pay.value,
+      note: s_note.value||"",
+      items: saleCart.map(x=>({name:x.name, qty:x.qty, price:x.price, disc:x.disc, discAmt:x.discAmt, item_id:x.item_id, item_code:x.item_code}))
+    };
+    // صف لكل صنف — مع رقم فاتورة مشترك
+    const invNo = "R"+Date.now().toString(36).toUpperCase();
+    const rows = saleCart.map(line=>({
+      rep_id:user.id, company:normalizeCompany(currentCompany)||currentCompany, sale_date:s_date.value||today(),
+      customer_id:cid, customer_name:cust.name||"",
+      item_code:line.item_code||"", item_name:line.name||"", item_id:line.item_id||"",
+      qty:num(line.qty), price:num(line.price), disc:num(line.disc), disc_amt:num(line.discAmt), discAmt:num(line.discAmt),
+      pay:s_pay.value, sale_type:line.sale_type||s_type.value, note:(s_note.value||"")+(invNo?" · فاتورة "+invNo:""),
+      status:"pending", inv:invNo
+    }));
+
+    async function pushRows(){
+      const ids=[];
+      for(const row of rows){
+        const {data,error}=await insertDraft("rep_sales_draft", row);
+        if(error) throw error;
+        ids.push(data&&data.id);
+      }
+      try{
+        await sb.from("rep_notifications").insert({
+          user_id: user.id, title: "تم إرسال فاتورة بيع",
+          body: `${cust.name||""} · ${rows.length} أصناف · ${invNo} · بانتظار الاعتماد`,
+          kind: "draft_sent", ref_type:"sale", ref_id: ids[0]||null
+        });
+      }catch(e){}
+      return ids;
+    }
+
+    if(!isOnline()){
+      rows.forEach((row,i)=>enqueue("sale", row, (cust.name||"")+" · "+(row.item_name||"")+" × "+row.qty));
+      s_msg.className="msg ok"; s_msg.textContent="حُفظت الفاتورة أوفلاين ("+rows.length+" أصناف) — ستُزامَن تلقائياً";
+      showSaleActions(invData); try{ aiAfterAction("sale", invData); }catch(e){ console.warn(e); }
+      saleCart=[]; renderCart(); updateQBadge();
+      return;
+    }
+    try{
+      await pushRows();
+      s_msg.className="msg ok"; s_msg.textContent="تم إرسال الفاتورة ("+rows.length+" أصناف) — بانتظار اعتماد الإدارة";
+      showSaleActions(invData); try{ aiAfterAction("sale", invData); }catch(e){ console.warn(e); }
+      if(window.AYNotify) AYNotify.both("فاتورة بيع — "+(profile&&profile.name||"مندوب"), (cust.name||"")+" · "+rows.length+" أصناف · "+currentCompany);
+      saleCart=[]; renderCart();
+      s_qty.value=1; s_note.value="";
+      loadMyHistory();
+    }catch(netErr){
+      console.warn(netErr);
+      rows.forEach(row=>enqueue("sale", row, (cust.name||"")+" · "+(row.item_name||"")+" × "+row.qty));
+      s_msg.className="msg ok";
+      s_msg.textContent="تعذر الإرسال الآن — حُفظت محلياً وستُزامَن تلقائياً عند استقرار الشبكة. "+(netErr.message||"");
+      showSaleActions(invData); try{ aiAfterAction("sale", invData); }catch(e){ console.warn(e); }
+      saleCart=[]; renderCart(); updateQBadge();
+    }
+  }catch(e){ s_msg.className="msg err"; s_msg.textContent=e.message||String(e); }
+  finally{
+    window.__saleBusy=false;
+    const b=document.getElementById("s_save");
+    if(b){ b.disabled=false; b.textContent="إرسال الفاتورة للإدارة"; }
+  }
+}
+
+async function saveCol(){
+  c_msg.textContent=""; c_msg.className="msg";
+  try{
+    const cid=c_cust.value;
+    if(!cid||num(c_amt.value)<=0) throw new Error("أكمل العميل والمبلغ");
+    const cust=(companyDB.customers||[]).find(c=>c.id===cid)||{};
+    const row={
+      rep_id:user.id, company:normalizeCompany(currentCompany)||currentCompany, col_date:c_date.value||today(),
+      customer_id:cid, customer_name:cust.name||"", amt:num(c_amt.value),
+      method:c_method.value, note:c_note.value||"", status:"pending"
+    };
+    if(!isOnline()){
+      enqueue("collection", row, (cust.name||"")+" · "+c_amt.value);
+      c_msg.className="msg ok"; c_msg.textContent="حُفظ أوفلاين — سيُزامَن عند عودة الشبكة";
+      c_amt.value=""; c_note.value=""; updateQBadge(); return;
+    }
+    try{
+      const {data,error}=await insertDraft("rep_collections_draft", row);
+      if(error) throw error;
+      await sb.from("rep_notifications").insert({
+        user_id:user.id, title:"تم إرسال مسودة تحصيل",
+        body:`${cust.name||""} · ${c_amt.value} · بانتظار الاعتماد`,
+        kind:"draft_sent", ref_type:"collection", ref_id:data?.id||null
+      });
+      c_msg.className="msg ok"; c_msg.textContent="تم إرسال التحصيل للإدارة"; try{ aiAfterAction("collection",{customer:cust.name,amt:c_amt.value,method:c_method.value}); }catch(e){}
+      if(window.AYNotify) AYNotify.both("مسودة تحصيل — "+(profile&&profile.name||"مندوب"), (cust.name||"")+" · "+c_amt.value+" · "+currentCompany);
+    }catch(netErr){
+      enqueue("collection", row, (cust.name||"")+" · "+c_amt.value);
+      c_msg.className="msg ok"; c_msg.textContent="تعذر الإرسال للسحابة — حُفظ أوفلاين"+(netErr&&netErr.message?(" · "+String(netErr.message).slice(0,100)):"");
+      c_amt.value=""; c_note.value=""; updateQBadge(); return;
+    }
+    c_amt.value=""; c_note.value="";
+    loadMyHistory();
+  }catch(e){ c_msg.className="msg err"; c_msg.textContent=e.message||String(e); }
+}
+
+function startGPS(){
+  if(!navigator.geolocation){ v_gps.textContent="الجهاز لا يدعم GPS"; gpsBadge.textContent="لا GPS"; return; }
+  navigator.geolocation.watchPosition(pos=>{
+    gps.lat=pos.coords.latitude; gps.lng=pos.coords.longitude; gps.accuracy=pos.coords.accuracy;
+    v_gps.textContent=`موقعك: ${gps.lat.toFixed(5)}, ${gps.lng.toFixed(5)} (±${Math.round(gps.accuracy||0)}م)`;
+    v_gps.className="gps ok"; gpsBadge.textContent="GPS ✓"; gpsBadge.className="badge on";
+    if(user) pushLocation();
+  }, err=>{
+    v_gps.textContent="تعذر الموقع: "+err.message;
+    gpsBadge.textContent="GPS ✗";
+  }, {enableHighAccuracy:true, maximumAge:15000, timeout:20000});
+}
+
+async function pushLocation(){
+  if(!user||gps.lat==null) return;
+  try{
+    await sb.from("rep_locations").upsert({
+      rep_id:user.id, company:normalizeCompany(currentCompany)||currentCompany, lat:gps.lat, lng:gps.lng,
+      accuracy:gps.accuracy, updated_at:new Date().toISOString()
+    });
+  }catch(e){}
+}
+
+async function saveVisit(){
+  v_msg.textContent=""; v_msg.className="msg";
+  try{
+    if(gps.lat==null) throw new Error("انتظر تحديد الموقع أو فعّل GPS");
+    const cid=v_cust.value;
+    const cust=(companyDB.customers||[]).find(c=>c.id===cid)||{};
+    const visitRow={
+      rep_id:user.id, company:currentCompany,
+      customer_id:cid||"", customer_name:v_cname.value.trim()||cust.name||"",
+      lat:gps.lat, lng:gps.lng, accuracy:gps.accuracy, notes:v_notes.value||"",
+      visited_at:new Date().toISOString()
+    };
+    if(!isOnline()){
+      enqueue("visit", visitRow, visitRow.customer_name||"زيارة");
+      v_msg.className="msg ok"; v_msg.textContent="زيارة محفوظة أوفلاين";
+      v_notes.value=""; v_cname.value=""; updateQBadge(); return;
+    }
+    try{
+      const {error}=await sb.from("rep_visits").insert(visitRow);
+      if(error) throw error;
+      await pushLocation();
+      v_msg.className="msg ok"; v_msg.textContent="تم تسجيل الزيارة";
+    }catch(netErr){
+      enqueue("visit", visitRow, visitRow.customer_name||"زيارة");
+      v_msg.className="msg ok"; v_msg.textContent="تعذر الاتصال — حُفظت الزيارة أوفلاين";
+      v_notes.value=""; v_cname.value=""; updateQBadge(); return;
+    }
+    v_notes.value=""; v_cname.value="";
+    loadMyHistory();
+  }catch(e){ v_msg.className="msg err"; v_msg.textContent=e.message||String(e); }
+}
+
+async function loadMyHistory(){
+  if(!user) return;
+  const from=($("myFrom")&&myFrom.value)||"";
+  const to=($("myTo")&&myTo.value)||"";
+  const {data:sales}=await sb.from("rep_sales_draft").select("*").eq("rep_id",user.id).order("created_at",{ascending:false}).limit(200);
+  const {data:cols}=await sb.from("rep_collections_draft").select("*").eq("rep_id",user.id).order("created_at",{ascending:false}).limit(200);
+  const {data:exps}=await sb.from("rep_expenses_draft").select("*").eq("rep_id",user.id).order("created_at",{ascending:false}).limit(200);
+  const {data:visits}=await sb.from("rep_visits").select("*").eq("rep_id",user.id).order("visited_at",{ascending:false}).limit(200);
+  const fs=(sales||[]).filter(x=>!from&&!to ? true : inDateRange(x.sale_date||x.created_at, from, to));
+  const fc=(cols||[]).filter(x=>!from&&!to ? true : inDateRange(x.col_date||x.created_at, from, to));
+  const fe=(exps||[]).filter(x=>!from&&!to ? true : inDateRange(x.exp_date||x.created_at, from, to));
+  const fv=(visits||[]).filter(x=>!from&&!to ? true : inDateRange(x.visited_at, from, to));
+  my_s.textContent=fs.filter(x=>x.status==="pending").length;
+  my_c.textContent=fc.filter(x=>x.status==="pending").length;
+  if($("my_e")) my_e.textContent=fe.filter(x=>x.status==="pending").length;
+  my_sales.innerHTML=fs.slice(0,50).map((x,i)=>{
+    const st = x.edited_by_admin && x.status==="pending" ? "edited" : x.status;
+    const lab = st==="edited"?"معدّل من الإدارة":x.status;
+    const payload=JSON.stringify({
+      date:x.sale_date, customer:x.customer_name, phone:"", company:x.company||currentCompany,
+      rep:(profile&&profile.name)||"", pay:x.pay, type:x.sale_type, note:x.note||"",
+      items:[{name:x.item_name, qty:x.qty, price:x.price, disc:x.disc||0}]
+    }).replace(/'/g,"&#39;");
+    return `<div class="list-item"><b>${x.customer_name}</b> · ${x.item_name} × ${fmt(x.qty)}
+      <div class="muted">${x.sale_date} · ${fmt(lineTotal(x.qty,x.price,x.disc))} · <span class="st-${st}">${lab}</span>
+      ${x.review_note?` · ${x.review_note}`:""}</div>
+      <div class="sale-actions no-print" style="margin-top:6px">
+        <button type="button" class="btn btn-print" style="padding:6px" onclick='printInvoice(${payload})'>طباعة</button>
+        <button type="button" class="btn g" style="padding:6px" onclick='(function(){const d=${payload};let p=prompt("رقم واتساب العميل:",d.phone||"")||"";sendInvoiceWhatsApp(d,p);})()'>واتساب</button>
+      </div></div>`;
+  }).join("")||'<div class="muted">لا شيء</div>';
+  my_cols.innerHTML=fc.slice(0,50).map(x=>{
+    const st = x.edited_by_admin && x.status==="pending" ? "edited" : x.status;
+    const lab = st==="edited"?"معدّل من الإدارة":x.status;
+    return `<div class="list-item"><b>${x.customer_name}</b> · ${fmt(x.amt)}
+      <div class="muted">${x.col_date} · ${x.method} · <span class="st-${st}">${lab}</span></div></div>`;
+  }).join("")||'<div class="muted">لا شيء</div>';
+  my_exps.innerHTML=fe.slice(0,50).map(x=>{
+    const st = x.edited_by_admin && x.status==="pending" ? "edited" : x.status;
+    const lab = st==="edited"?"معدّل من الإدارة":x.status;
+    return `<div class="list-item"><b>${x.desc||""}</b> · ${fmt(x.amt)} · ${x.cat||""}
+      <div class="muted">${x.exp_date||""} · <span class="st-${st}">${lab}</span></div></div>`;
+  }).join("")||'<div class="muted">لا مصروفات</div>';
+  my_visits.innerHTML=fv.slice(0,50).map(x=>`<div class="list-item"><b>${x.customer_name||"زيارة"}</b>
+    <div class="muted">${new Date(x.visited_at).toLocaleString("ar-EG")} · ${x.notes||""}</div>
+    ${x.lat?`<div class="muted"><a style="color:var(--p)" target="_blank" href="https://maps.google.com/?q=${x.lat},${x.lng}">خريطة</a></div>`:""}
+    </div>`).join("")||'<div class="muted">لا زيارات</div>';
+}
+
+async function renderDaySummary(){
+  if(!user) return;
+  const from=dayFrom.value||today();
+  const to=dayTo.value||from;
+  dayRangeLabel.textContent = from===to ? from : (from+" → "+to);
+  const {data:sales}=await sb.from("rep_sales_draft").select("*").eq("rep_id",user.id).eq("company",currentCompany).order("sale_date",{ascending:true});
+  const {data:cols}=await sb.from("rep_collections_draft").select("*").eq("rep_id",user.id).eq("company",currentCompany).order("col_date",{ascending:true});
+  const {data:exps}=await sb.from("rep_expenses_draft").select("*").eq("rep_id",user.id).eq("company",currentCompany).order("exp_date",{ascending:true});
+  const {data:visits}=await sb.from("rep_visits").select("*").eq("rep_id",user.id).eq("company",currentCompany).order("visited_at",{ascending:true});
+  const fs=(sales||[]).filter(x=>inDateRange(x.sale_date||x.created_at, from, to));
+  const fc=(cols||[]).filter(x=>inDateRange(x.col_date||x.created_at, from, to));
+  const fe=(exps||[]).filter(x=>inDateRange(x.exp_date||x.created_at, from, to));
+  const fv=(visits||[]).filter(x=>inDateRange(x.visited_at, from, to));
+  let salesAmt=0, salesCash=0, salesCredit=0, colAmt=0, expAmt=0;
+  fs.forEach(x=>{
+    const v=lineTotal(x.qty,x.price,x.disc); salesAmt+=v;
+    if(x.pay==="كاش") salesCash+=v; else salesCredit+=v;
+  });
+  fc.forEach(x=>colAmt+=num(x.amt));
+  fe.forEach(x=>expAmt+=num(x.amt));
+  dayKpis.innerHTML=`
+    <div class="kpi"><div class="l">عدد المبيعات</div><div class="v">${fs.length}</div></div>
+    <div class="kpi"><div class="l">قيمة المبيعات</div><div class="v">${fmt(salesAmt)}</div></div>
+    <div class="kpi"><div class="l">تحصيلات</div><div class="v">${fmt(colAmt)}</div></div>
+    <div class="kpi"><div class="l">مصروفات</div><div class="v">${fmt(expAmt)}</div></div>
+    <div class="kpi"><div class="l">زيارات</div><div class="v">${fv.length}</div></div>`;
+  daySales.innerHTML=fs.map(x=>`<tr>
+    <td>${x.sale_date||""}</td><td>${x.customer_name||""}</td><td>${x.item_name||""}</td>
+    <td>${fmt(x.qty)}</td><td>${fmt(x.price)}</td><td>${fmt(lineTotal(x.qty,x.price,x.disc))}</td>
+    <td>${x.pay||""}</td><td>${x.status||""}</td></tr>`).join("")||'<tr><td colspan="8">لا مبيعات</td></tr>';
+  dayCols.innerHTML=fc.map(x=>`<tr>
+    <td>${x.col_date||""}</td><td>${x.customer_name||""}</td><td>${fmt(x.amt)}</td>
+    <td>${x.method||""}</td><td>${x.status||""}</td></tr>`).join("")||'<tr><td colspan="5">لا تحصيلات</td></tr>';
+  dayExps.innerHTML=fe.map(x=>`<tr>
+    <td>${x.exp_date||""}</td><td>${x.desc||""}</td><td>${x.cat||""}</td>
+    <td>${fmt(x.amt)}</td><td>${x.status||""}</td></tr>`).join("")||'<tr><td colspan="5">لا مصروفات</td></tr>';
+  dayVisits.innerHTML=fv.map(x=>`<tr>
+    <td>${new Date(x.visited_at).toLocaleString("ar-EG")}</td>
+    <td>${x.customer_name||"—"}</td><td>${x.notes||""}</td>
+    <td>${x.lat?`${Number(x.lat).toFixed(4)}, ${Number(x.lng).toFixed(4)}`: "—"}</td>
+  </tr>`).join("")||'<tr><td colspan="4">لا زيارات</td></tr>';
+  const pendS=fs.filter(x=>x.status==="pending").length;
+  const apprS=fs.filter(x=>x.status==="approved").length;
+  dayTotals.innerHTML=`
+    <div><b>الإجماليات النهائية</b></div>
+    <div>مبيعات كاش: <b>${fmt(salesCash)}</b> · مبيعات آجل: <b>${fmt(salesCredit)}</b> · الإجمالي: <b>${fmt(salesAmt)}</b></div>
+    <div>تحصيلات: <b>${fmt(colAmt)}</b> · مصروفات: <b>${fmt(expAmt)}</b> · زيارات: <b>${fv.length}</b></div>
+    <div>صافي تقريبي (تحصيل − مصروف): <b>${fmt(colAmt-expAmt)}</b></div>
+    <div>حالات المبيعات — معتمد: <b>${apprS}</b> · معلّق: <b>${pendS}</b> · مرفوض: <b>${fs.filter(x=>x.status==="rejected").length}</b></div>
+    <div style="margin-top:8px">المندوب: <b>${(profile&&profile.name)||""}</b> · الشركة: <b>${currentCompany}</b></div>`;
+}
+
+async function loadNotifications(){
+  if(!user) return;
+  let list=[];
+  try{
+    const {data}=await sb.from("rep_notifications").select("*").eq("user_id",user.id).order("created_at",{ascending:false}).limit(50);
+    list=data||[];
+  }catch(e){}
+  // ملاحظات صاحب النشاط الموجهة لهذا المندوب أو للجميع
+  try{
+    const {data:notes}=await sb.from("owner_notes").select("*").order("created_at",{ascending:false}).limit(30);
+    (notes||[]).forEach(n=>{
+      if(n.to_user_id && n.to_user_id!==user.id) return;
+      // to_user_id null = عام / إدارة — أظهرها للمندوب إذا كانت to_label تشمل المناديب أو فارغة
+      if(!n.to_user_id && n.to_label && /إدارة/.test(n.to_label) && !/مناديب|الكل/.test(n.to_label||"")) return;
+      list.push({
+        id: "note_"+n.id,
+        title: "ملاحظة من صاحب النشاط",
+        body: n.body||"",
+        created_at: n.created_at,
+        read: !!n.read,
+        kind: "owner_note"
+      });
+    });
+  }catch(e){}
+  list.sort((a,b)=>String(b.created_at||"").localeCompare(String(a.created_at||"")));
+  const unread=list.filter(n=>!n.read).length;
+  if(typeof bellDot!=="undefined" && bellDot) bellDot.className = unread ? "dot on" : "dot";
+  if(typeof notifList!=="undefined" && notifList)
+    notifList.innerHTML=list.map(n=>`<div class="notif-item ${n.read?"":"unread"}" data-nid="${n.id}">
+      <b>${n.title||""}</b>
+      <div class="muted">${n.created_at?new Date(n.created_at).toLocaleString("ar-EG"):""}</div>
+      <div>${n.body||""}</div>
+    </div>`).join("")||'<div class="muted">لا إشعارات</div>';
+}
+
+function subscribeNotifs(){
+  if(!user) return;
+  try{
+    sb.channel("rep-notif-"+user.id)
+      .on("postgres_changes",{event:"INSERT",schema:"public",table:"rep_notifications",filter:`user_id=eq.${user.id}`},
+        payload=>{ loadNotifications(); loadMyHistory(); })
+      .on("postgres_changes",{event:"UPDATE",schema:"public",table:"rep_sales_draft",filter:`rep_id=eq.${user.id}`},
+        ()=>{ loadMyHistory(); loadNotifications(); })
+      .on("postgres_changes",{event:"UPDATE",schema:"public",table:"rep_collections_draft",filter:`rep_id=eq.${user.id}`},
+        ()=>{ loadMyHistory(); loadNotifications(); })
+      .subscribe();
+  }catch(e){}
+}
+
+bellBtn.onclick=()=>{ notifPanel.classList.add("open"); loadNotifications(); };
+notifClose.onclick=()=>notifPanel.classList.remove("open");
+notifPanel.onclick=e=>{ if(e.target===notifPanel) notifPanel.classList.remove("open"); };
+notifReadAll.onclick=async()=>{
+  await sb.from("rep_notifications").update({read:true}).eq("user_id",user.id).eq("read",false);
+  loadNotifications();
+};
+notifList.onclick=async e=>{
+  const item=e.target.closest("[data-nid]"); if(!item) return;
+  await sb.from("rep_notifications").update({read:true}).eq("id",item.dataset.nid);
+  loadNotifications();
+};
+
+document.querySelectorAll(".tabs button").forEach(b=>{
+  b.onclick=()=>{
+    document.querySelectorAll(".tabs button").forEach(x=>x.classList.remove("on"));
+    document.querySelectorAll(".pane").forEach(x=>x.classList.remove("on"));
+    b.classList.add("on"); $("p-"+b.dataset.t).classList.add("on");
+    if(b.dataset.t==="day") renderDaySummary();
+    if(b.dataset.t==="my") loadMyHistory();
+    if(b.dataset.t==="vehicle"){ if(typeof loadVehicleStock==="function") loadVehicleStock(); if(typeof loadVehicleReqs==="function") loadVehicleReqs(); }
+    if(b.dataset.t==="ai"){ try{ aiRenderLog(); }catch(e){} }
+    if(b.dataset.t==="ret"){
+      if(typeof fillReturnSelects==="function") fillReturnSelects();
+      (async()=>{
+        try{
+          if(!sb||!user) return;
+          const {data}=await sb.from("rep_vehicle_stock").select("*").eq("rep_id",user.id).eq("company",currentCompany);
+          const sel=document.getElementById("rv_item");
+          if(sel) sel.innerHTML='<option value="">— اختر —</option>'+(data||[]).filter(x=>num(x.qty)>0).map(x=>`<option value="${x.item_id}">${x.item_code||""} ${x.item_name} (${x.qty})</option>`).join("");
+        }catch(e){}
+      })();
+    }
+  };
+});
+
+// ===== طباعة =====
+function preparePrint(paneId){
+  document.querySelectorAll(".pane").forEach(p=>p.classList.remove("print-target"));
+  const pane=$(paneId); if(pane) pane.classList.add("print-target");
+  document.querySelectorAll(".ph-co").forEach(el=>{ el.textContent=currentCompany||""; });
+  document.querySelectorAll(".ph-rep").forEach(el=>{ el.textContent=(profile&&profile.name)||""; });
+  const at=$("dayPrintAt"); if(at) at.textContent=new Date().toLocaleString("ar-EG");
+}
+document.querySelectorAll("[data-print]").forEach(btn=>{
+  btn.addEventListener("click", ()=>{
+    preparePrint(btn.getAttribute("data-print"));
+    setTimeout(()=>window.print(), 150);
+  });
+});
+
+// ===== عميل جديد =====
+async function addCustomer(){
+  const msg=$("nc_msg"); if(msg){ msg.className="msg"; msg.textContent=""; }
+  try{
+    const name=($("nc_name").value||"").trim();
+    if(!name) throw new Error("أدخل اسم العميل");
+    if(!companyDB) companyDB={customers:[],items:[],sales:[],collections:[],purchases:[]};
+    if(!Array.isArray(companyDB.customers)) companyDB.customers=[];
+    const rec={
+      id: Math.random().toString(16).slice(2),
+      name,
+      storeName: ($("nc_store")&&$("nc_store").value||"").trim(),
+      phone: ($("nc_phone")&&$("nc_phone").value||"").trim(),
+      address: ($("nc_addr")&&$("nc_addr").value||"").trim(),
+      openBal:0
+    };
+    companyDB.customers.push(rec);
+    try{ localStorage.setItem("acc_abu_"+currentCompany+"_v2", JSON.stringify(companyDB)); }catch(e){}
+    try{
+      if(sb&&user){
+        await sb.from("company_data").upsert({id:currentCompany, data:companyDB, updated_at:new Date().toISOString(), updated_by:user.id},{onConflict:"id"});
+      }
+    }catch(e){}
+    fillSelects();
+    if($("s_cust")) s_cust.value=rec.id;
+    if(msg){ msg.className="msg ok"; msg.textContent="تم حفظ العميل"; }
+    if($("nc_name")) nc_name.value="";
+    if($("nc_store")) nc_store.value="";
+    if($("nc_phone")) nc_phone.value="";
+    if($("nc_addr")) nc_addr.value="";
+  }catch(e){ if(msg){ msg.className="msg err"; msg.textContent=e.message||String(e); } }
+}
+const ncBtn=$("nc_save"); if(ncBtn) ncBtn.onclick=addCustomer;
+
+function inDateRange(ds, from, to){
+  if(!ds) return false;
+  const x=String(ds).slice(0,10);
+  if(from && x<from) return false;
+  if(to && x>to) return false;
+  return true;
+}
+
+
+
+if($("s_scan_btn")) s_scan_btn.onclick=()=>startScan("sale","s_scan_box");
+if($("q_scan_btn")) q_scan_btn.onclick=()=>startScan("query","q_scan_box");
+if($("s_barcode")){
+  s_barcode.addEventListener("keydown", e=>{ if(e.key==="Enter"){ e.preventDefault(); onBarcodeSale(s_barcode.value); }});
+}
+if($("q_barcode")){
+  q_barcode.addEventListener("keydown", e=>{ if(e.key==="Enter"){ e.preventDefault(); onBarcodeQuery(q_barcode.value); }});
+}
+["s_qty","s_price","s_disc","s_disc_amt"].forEach(id=>{
+  const el=$(id); if(el) el.addEventListener("input", recalcSaleNet);
+});
+if($("s_type")) s_type.addEventListener("change", ()=>{
+  const it=(companyDB.items||[]).find(i=>i.id===s_item.value);
+  if(it) applyItemToSale(it);
+});
+if($("s_item")) s_item.addEventListener("change", ()=>{
+  const it=(companyDB.items||[]).find(i=>i.id===s_item.value);
+  if(it) applyItemToSale(it);
+});
+
+if($("stmtPrint")) stmtPrint.onclick=printStatement;
+if($("stmtWa")) stmtWa.onclick=sendStatementWhatsApp;
+if("serviceWorker" in navigator){ navigator.serviceWorker.register("./sw.js").catch(()=>{}); }
+if(window.AYNotify && Notification && Notification.permission==="default"){ try{ Notification.requestPermission(); }catch(e){} }
+lgBtn.onclick=login;
+if($("dayGo")) dayGo.onclick=renderDaySummary;
+if($("myFilter")) myFilter.onclick=loadMyHistory;
+
+
+window.addEventListener("online", ()=>{ setNetUI(true); pruneQueue().then(()=>flushQueue()).catch(()=>flushQueue()); });
+window.addEventListener("offline", ()=> setNetUI(false));
+document.addEventListener("DOMContentLoaded", ()=>{});
+// bind after elements exist
+setTimeout(()=>{
+  const bs=$("btnSync"); if(bs) bs.onclick=flushQueue;
+setInterval(function(){ try{ if(typeof isOnline==="function"&&isOnline()&&typeof flushQueue==="function") flushQueue(); }catch(e){} }, 15000);
+window.addEventListener("online", function(){ try{ flushQueue(); }catch(e){} });
+  setNetUI(isOnline()); updateQBadge();
+}, 0);
+
+
+// ===== مجموعة أبو يونس (مساعد المندوب) =====
+const AI_LOG_KEY = "ay_rep_ai_log";
+function aiLoadLog(){ try{ return JSON.parse(localStorage.getItem(AI_LOG_KEY)||"[]"); }catch(e){ return []; } }
+function aiSaveLog(list){ try{ localStorage.setItem(AI_LOG_KEY, JSON.stringify(list.slice(0,40))); }catch(e){} }
+function aiRenderLog(){
+  const el=$("aiLog"); if(!el) return;
+  const list=aiLoadLog();
+  el.innerHTML=list.map(x=>`<div style="padding:8px 0;border-bottom:1px solid var(--bd)">
+    <b>${x.at||""}</b> · ${x.kind||""}
+    <div class="muted">${(x.summary||"").slice(0,220)}</div>
+  </div>`).join("")||'<div class="muted">لا تحليلات بعد</div>';
+}
+/** ابحث عن الشركات التي يتواجد فيها الصنف بالاسم/الكود */
+function aiMapItemToCompanies(itemName, itemCode){
+  const found=[];
+  const seeds=window.COMPANY_SEEDS||{};
+  const name=(itemName||"").trim().toLowerCase();
+  const code=String(itemCode||"").trim();
+  Object.keys(seeds).forEach(co=>{
+    const items=seeds[co].items||[];
+    const hit=items.some(it=>{
+      if(code && (String(it.code||"")===code || String(it.barcode||"")===code)) return true;
+      const n=(it.name||"").trim().toLowerCase();
+      return name && n && (n===name || n.includes(name) || name.includes(n));
+    });
+    if(hit) found.push(co);
+  });
+  if(!found.length && currentCompany) found.push(currentCompany);
+  return found;
+}
+function aiBuildSaleReport(invData){
+  const items=invData.items||[];
+  const byCo={};
+  items.forEach(it=>{
+    const cos=aiMapItemToCompanies(it.name, it.item_code||it.item_id);
+    const primary=cos[0]||currentCompany||"—";
+    if(!byCo[primary]) byCo[primary]=[];
+    byCo[primary].push({
+      name:it.name, qty:it.qty, price:it.price, net:lineNet(it),
+      companies:cos, unit:it.unit||""
+    });
+  });
+  const total=items.reduce((a,it)=>a+lineNet(it),0);
+  const lines=[
+    "مجموعة أبو يونس — تحليل فاتورة مبيعات",
+    "المندوب: "+(invData.rep||(profile&&profile.name)||""),
+    "العميل: "+(invData.customer||""),
+    "المتجر: "+(invData.storeName||""),
+    "التاريخ: "+(invData.date||today()),
+    "الدفع: "+(invData.pay||""),
+    "الشركة الحالية في التطبيق: "+(currentCompany||""),
+    "الإجمالي: "+fmt(total),
+    "——— تقسيم حسب الشركات ———"
+  ];
+  Object.keys(byCo).forEach(co=>{
+    lines.push("▸ الشركة: "+co);
+    byCo[co].forEach(x=>{
+      lines.push("  · "+x.name+" × "+x.qty+" @ "+x.price+" = "+fmt(x.net)+(x.companies.length>1?" (متوفر أيضاً في: "+x.companies.join("، ")+")":""));
+    });
+  });
+  // نصائح
+  const tips=[];
+  items.forEach(it=>{
+    
+    const cos=aiMapItemToCompanies(it.name, it.item_code);
+    if(cos.length>1) tips.push("ℹ "+it.name+" موجود في أكثر من شركة: "+cos.join("، "));
+  });
+  items.forEach(it=>{ if(priceBelowCost(it.item_id, it.price)) tips.push("تنبيه: صنف بسعر أقل من التكلفة — راجع قبل الاعتماد"); });
+  if(invData.pay==="آجل") tips.push("تحصيل لاحق مطلوب من العميل "+(invData.customer||""));
+  if(tips.length){ lines.push("——— تنبيهات ——"); tips.forEach(x=>lines.push(x)); }
+  return { text:lines.join("\n"), byCo, total, tips, invData };
+}
+async function aiNotifyAdmin(report, kind){
+  const title="مجموعة أبو يونس: "+(kind||"عملية مندوب")+" — "+((profile&&profile.name)||"");
+  const body=(report.text||"").slice(0,1800);
+  // إشعار لكل مستخدم إدارة عبر جدول notifications إن أمكن + owner_notes style
+  try{
+    if(sb && user){
+      // خزّن كإشعار للمندوب نفسه للمرجع
+      await sb.from("rep_notifications").insert({
+        user_id:user.id, title, body:body.slice(0,500), kind:"ai_report", ref_type:"ai"
+      });
+      // جدول اختياري ai_reports
+      try{
+        await sb.from("ai_reports").insert({
+          rep_id:user.id, rep_name:(profile&&profile.name)||"",
+          company:currentCompany, kind:kind||"sale",
+          payload:report, body, created_at:new Date().toISOString()
+        });
+      }catch(e){ /* الجدول قد لا يكون موجوداً */ }
+    }
+  }catch(e){ console.warn("ai notify", e); }
+  if(window.AYNotify) try{ AYNotify.both(title, body.slice(0,200)); }catch(e){}
+  return true;
+}
+async function aiAfterAction(kind, payload){
+  let report;
+  if(kind==="sale" && payload){
+    report=aiBuildSaleReport(payload);
+  } else {
+    const lines=[
+      "مجموعة أبو يونس — "+kind,
+      "المندوب: "+((profile&&profile.name)||""),
+      "الشركة: "+(currentCompany||""),
+      "التاريخ: "+today(),
+      JSON.stringify(payload||{}).slice(0,500)
+    ];
+    report={ text:lines.join("\n"), byCo:{}, total:0, tips:[], invData:payload };
+  }
+  const live=$("aiLive");
+  if(live) live.innerHTML="<pre style='white-space:pre-wrap;font-family:inherit;margin:0'>"+report.text.replace(/</g,"&lt;")+"</pre>";
+  const list=aiLoadLog();
+  list.unshift({at:new Date().toLocaleString("ar-EG"), kind, summary:report.text});
+  aiSaveLog(list);
+  aiRenderLog();
+  window.__lastAiReport=report;
+  await aiNotifyAdmin(report, kind);
+  return report;
+}
+async function aiAnalyzeDayNow(){
+  const msg=$("aiMsg"); if(msg){msg.className="msg";msg.textContent="جاري التحليل...";}
+  try{
+    const from=today(), to=today();
+    let sales=[], cols=[], exps=[];
+    if(sb&&user){
+      try{
+        const a=await sb.from("rep_sales_draft").select("*").eq("rep_id",user.id).gte("sale_date",from).lte("sale_date",to);
+        sales=a.data||[];
+      }catch(e){}
+      try{
+        const a=await sb.from("rep_collections_draft").select("*").eq("rep_id",user.id).gte("col_date",from).lte("col_date",to);
+        cols=a.data||[];
+      }catch(e){}
+      try{
+        const a=await sb.from("rep_expenses_draft").select("*").eq("rep_id",user.id).gte("exp_date",from).lte("exp_date",to);
+        exps=a.data||[];
+      }catch(e){}
+    }
+    const byCo={};
+    sales.forEach(s=>{
+      const cos=aiMapItemToCompanies(s.item_name, s.item_code);
+      const co=cos[0]||s.company||currentCompany;
+      if(!byCo[co]) byCo[co]={sales:0, qty:0, lines:[]};
+      byCo[co].sales+=num(s.qty)*num(s.price);
+      byCo[co].qty+=num(s.qty);
+      byCo[co].lines.push(s.item_name+" × "+s.qty);
+    });
+    const lines=[
+      "مجموعة أبو يونس — تحليل يومي — "+((profile&&profile.name)||""),
+      "التاريخ: "+from,
+      "مبيعات (مسودات): "+sales.length+" سطر",
+      "تحصيلات: "+cols.length+" · مصروفات: "+exps.length,
+      "——— حسب الشركات ———"
+    ];
+    Object.keys(byCo).forEach(co=>{
+      lines.push("▸ "+co+" · قيمة تقريبية "+fmt(byCo[co].sales)+" · كمية "+fmt(byCo[co].qty));
+      byCo[co].lines.slice(0,8).forEach(l=>lines.push("  · "+l));
+    });
+    if(!sales.length) lines.push("لا مسودات بيع اليوم — أو لم تُزامَن بعد.");
+    lines.push("نصيحة: راجع رصيد السيارة قبل الجولة التالية.");
+    const report={text:lines.join("\n"), byCo, total:0, tips:[]};
+    window.__lastAiReport=report;
+    const live=$("aiLive"); if(live) live.innerHTML="<pre style='white-space:pre-wrap;font-family:inherit;margin:0'>"+report.text.replace(/</g,"&lt;")+"</pre>";
+    const list=aiLoadLog(); list.unshift({at:new Date().toLocaleString("ar-EG"), kind:"daily", summary:report.text}); aiSaveLog(list); aiRenderLog();
+    if(msg){msg.className="msg ok";msg.textContent="تم التحليل";}
+  }catch(e){ if(msg){msg.className="msg err";msg.textContent=e.message||String(e);} }
+}
+
+
+if(typeof s_price!=="undefined" && s_price){
+  s_price.addEventListener("input", ()=>{
+    const iid=s_item&&s_item.value;
+    if(!iid) return;
+    if(priceBelowCost(iid, num(s_price.value))){
+      if(s_msg){ s_msg.className="msg err"; s_msg.textContent="تنبيه: سعر البيع أقل من التكلفة — راجع السعر"; }
+    } else if(s_msg && /أقل من التكلفة/.test(s_msg.textContent||"")){
+      s_msg.className="msg"; s_msg.textContent="";
+    }
+  });
+}
+
+s_save.onclick=saveSale;
+
+const btnOpenGroup=document.getElementById("btnOpenGroup");
+if(btnOpenGroup){
+  btnOpenGroup.onclick=()=>{
+    document.querySelectorAll(".tabs button").forEach(x=>x.classList.remove("on"));
+    document.querySelectorAll(".pane").forEach(x=>x.classList.remove("on"));
+    const tb=document.querySelector('.tabs button[data-t="ai"]');
+    if(tb) tb.classList.add("on");
+    const pane=document.getElementById("p-ai");
+    if(pane) pane.classList.add("on");
+    try{ aiRenderLog(); }catch(e){}
+  };
+}
+
+
+const _aiDay=document.getElementById("aiAnalyzeDay");
+if(_aiDay) _aiDay.onclick=()=>aiAnalyzeDayNow();
+const _aiSend=document.getElementById("aiSendAdmin");
+if(_aiSend) _aiSend.onclick=async()=>{
+  const msg=$("aiMsg");
+  if(!window.__lastAiReport){ if(msg){msg.className="msg err";msg.textContent="لا يوجد تحليل — اضغط تحليل يومي أو أرسل عملية أولاً";} return; }
+  await aiNotifyAdmin(window.__lastAiReport, "manual");
+  if(msg){msg.className="msg ok";msg.textContent="تم إرسال التحليل للإدارة / السجل";}
+};
+setTimeout(()=>{ try{ aiRenderLog(); }catch(e){} }, 500);
+
+const _sAdd=document.getElementById('s_add_line');
+if(_sAdd)_sAdd.onclick=()=>addLineToCart();
+
+if($("e_save")) e_save.onclick=saveExpense; 
+function refreshColDebt(){
+  const el=document.getElementById("c_debt");
+  if(!el) return;
+  const cid=c_cust && c_cust.value;
+  if(!cid){ el.value=""; el.style.color="#ef4444"; return; }
+  const rem=typeof custRemain==="function"?custRemain(cid):0;
+  el.value=fmt(rem);
+  el.style.color = rem>0 ? "#ef4444" : (rem<0 ? "#22c55e" : "#94a3b8");
+}
+if(typeof c_cust!=="undefined" && c_cust){
+  c_cust.addEventListener("change", refreshColDebt);
+}
+
+c_save.onclick=saveCol; v_save.onclick=saveVisit;
+btnOut.onclick=async()=>{ await sb.auth.signOut(); location.reload(); };
+
+(async()=>{
+  try{
+    initSB();
+    const {data}=await sb.auth.getSession();
+    if(data.session){ user=data.session.user; await afterLogin(); }
+  }catch(e){ console.warn(e); }
+})();
+
+/* ===== طلب تحميل سيارة ===== */
+async function loadVehicleStock(){
+  const body=document.getElementById("v_stock_body");
+  const co=currentCompany||(coSelect&&coSelect.value)||"";
+  try{
+    if(!sb||!profile){ if(body) body.innerHTML="<tr><td colspan=3>سجّل الدخول</td></tr>"; return; }
+    let {data,error}=await sb.from("rep_vehicle_stock").select("*").eq("rep_id",profile.user_id).eq("company",co);
+    if(error || !(data||[]).length){
+      // بدون فلتر شركة ثم صفِّ
+      const r2=await sb.from("rep_vehicle_stock").select("*").eq("rep_id",profile.user_id);
+      data=(r2.data||[]).filter(x=>!co || x.company===co || !x.company);
+    }
+    window._vStock = data||[];
+    try{ if(typeof fillSelects==='function') fillSelects(); }catch(e){}
+    // حدّث كاش الشركة
+    try{
+      const m={};
+      (data||[]).forEach(r=>{ const id=r.item_id; if(id) m[id]=num(m[id]||0)+num(r.qty); });
+      localStorage.setItem("ay_vstock_"+co, JSON.stringify(m));
+    }catch(e){}
+    if(body){
+      body.innerHTML=(data||[]).filter(x=>num(x.qty)>0).map(x=>`<tr>
+        <td>${x.item_code||"—"}</td><td>${x.item_name||x.item_id||""}</td><td><b>${fmt(x.qty)}</b></td>
+      </tr>`).join("")||"<tr><td colspan=3>لا رصيد على السيارة</td></tr>";
+    }
+  }catch(e){
+    console.warn(e);
+    if(body) body.innerHTML="<tr><td colspan=3>تعذر التحميل</td></tr>";
+  }
+}
+async function loadVehicleReqs(){
+  const body=document.getElementById("v_req_body");
+  const co=currentCompany||(coSelect&&coSelect.value)||"";
+  try{
+    if(!sb||!profile){ if(body) body.innerHTML=""; return; }
+    let {data}=await sb.from("rep_vehicle_load_draft").select("*").eq("rep_id",profile.user_id).order("created_at",{ascending:false}).limit(40);
+    data=(data||[]).filter(x=>!co || !x.company || x.company===co);
+    if(body){
+      body.innerHTML=data.map(x=>{
+        const st=x.status||"pending";
+        const cls=st==="approved"?"st-approved":(st==="rejected"?"st-rejected":"st-pending");
+        return `<tr><td>${x.load_date||String(x.created_at||"").slice(0,10)}</td>
+          <td>${x.item_name||""}</td><td>${fmt(x.qty)}</td>
+          <td class="${cls}">${st==="approved"?"معتمد":st==="rejected"?"مرفوض":"معلّق"}</td></tr>`;
+      }).join("")||"<tr><td colspan=4>لا طلبات</td></tr>";
+    }
+  }catch(e){ console.warn(e); }
+}
+function resolveVehicleItem(){
+  const bcEl=document.getElementById("v_barcode");
+  const bc=(bcEl&&bcEl.value)||"";
+  if(!bc.trim()) return;
+  if(!companyDB||!companyDB.items){ const m=document.getElementById("v_msg"); if(m) m.textContent="لم تُحمَّل بيانات الشركة"; return; }
+  const it=findItemByBarcode(bc.trim());
+  if(!it){ const m=document.getElementById("v_msg"); if(m) m.textContent="صنف غير موجود"; return; }
+  document.getElementById("v_item").value=it.name||"";
+  document.getElementById("v_item_id").value=it.id||"";
+  document.getElementById("v_item_code").value=it.code||"";
+  const wh=balOfItem(it.id);
+  document.getElementById("v_wh_stock").value=fmt(wh);
+  const vs=(window._vStock||[]).find(x=>x.item_id===it.id);
+  document.getElementById("v_car_stock").value=fmt(vs?vs.qty:0);
+  const m=document.getElementById("v_msg"); if(m) m.textContent="";
+}
+
+
+let vehicleCart = [];
+function fillVItemPick(){
+  const sel=document.getElementById("v_item_pick");
+  if(!sel) return;
+  const items=(companyDB && companyDB.items) ? companyDB.items : [];
+  const cur=sel.value;
+  sel.innerHTML='<option value="">— صنف ('+items.length+') —</option>'+
+    items.map(it=>`<option value="${it.id}">${it.name||""}</option>`).join("");
+  if(cur && [...sel.options].some(o=>o.value===cur)) sel.value=cur;
+}
+function renderVehicleCart(){
+  const body=document.getElementById("v_cart_body");
+  const cnt=document.getElementById("v_cart_count");
+  if(!body) return;
+  body.innerHTML=vehicleCart.map((x,i)=>`<tr>
+    <td>${x.item_name||""}</td><td>${fmt(x.qty)}</td>
+    <td><button type="button" class="btn r" data-vi="${i}" style="padding:2px 8px">حذف</button></td>
+  </tr>`).join("")||"<tr><td colspan=3>لا أصناف بعد</td></tr>";
+  body.querySelectorAll("[data-vi]").forEach(b=>{
+    b.onclick=()=>{ vehicleCart.splice(+b.dataset.vi,1); renderVehicleCart(); };
+  });
+  if(cnt) cnt.textContent = vehicleCart.length ? ("عدد الأصناف: "+vehicleCart.length) : "";
+}
+function vloadFp(x){
+  return [String(x.rep_id||""),String(x.item_id||x.item_name||""),String(x.load_date||"").slice(0,10),String(num(x.qty)),String(x.company||"")].join("|");
+}
+function saveLocalVLoad(payload, extra){
+  try{
+    const key="ay_pending_vloads";
+    let arr=JSON.parse(localStorage.getItem(key)||"[]");
+    const rec={...payload, ...(extra||{}), id:(extra&&extra.id)||("local_"+Date.now()), status:"pending", created_at:new Date().toISOString(), rep_name:(profile&&profile.name)||""};
+    const fp=vloadFp(rec);
+    // لا تكرار بنفس البصمة
+    if(arr.some(x=>vloadFp(x)===fp)) return;
+    arr.unshift(rec);
+    localStorage.setItem(key, JSON.stringify(arr.slice(0,100)));
+  }catch(e){}
+}
+function enqueueVLoadOnce(payload){
+  try{
+    const q=loadQ();
+    const fp=vloadFp(payload);
+    if(q.some(it=>it.type==="vehicle_load" && vloadFp(it.payload||{})===fp)) return;
+    enqueue("vehicle_load", payload, (payload.item_name||"")+" × "+payload.qty);
+  }catch(e){ enqueue("vehicle_load", payload, (payload.item_name||"")+" × "+payload.qty); }
+}
+async function insertVehicleLoadRow(payload){
+  if(!navigator.onLine || !sb){
+    enqueueVLoadOnce(payload);
+    saveLocalVLoad(payload);
+    return {error:null, offline:true};
+  }
+  // منع الإدراج المكرر في السحابة لنفس المندوب+صنف+يوم
+  try{
+    let q=sb.from("rep_vehicle_load_draft").select("id").eq("status","pending").eq("rep_id", payload.rep_id).limit(20);
+    if(payload.item_id) q=q.eq("item_id", payload.item_id);
+    if(payload.load_date) q=q.eq("load_date", payload.load_date);
+    const {data:exist}=await q;
+    if(exist && exist.length){
+      // موجود مسبقاً — لا تُدرج مرة أخرى
+      return {data:exist[0], error:null, skipped:true};
+    }
+  }catch(e){}
+  let r = await insertDraft("rep_vehicle_load_draft", payload);
+  if(r && r.error){
+    const msg=r.error.message||"";
+    // إن كان الخطأ بسبب تكرار فريد أو RLS
+    enqueueVLoadOnce(payload);
+    saveLocalVLoad(payload, {_err:msg});
+    return {error:null, offline:true, rls:/row-level security|RLS|policy/i.test(msg), msg};
+  }
+  return r;
+}
+function clearVehicleItemFields(){
+  ["v_item_id","v_item","v_item_code","v_qty","v_barcode","v_wh_stock","v_car_stock"].forEach(id=>{
+    const el=document.getElementById(id); if(el) el.value="";
+  });
+  const sel=document.getElementById("v_item_pick"); if(sel) sel.value="";
+}
+(function bindVehicleUI(){
+  const bc=document.getElementById("v_barcode");
+  if(bc){
+    bc.addEventListener("change", resolveVehicleItem);
+    bc.addEventListener("keydown", e=>{ if(e.key==="Enter"){ e.preventDefault(); resolveVehicleItem(); }});
+  }
+  function ensureItemPick(){
+    if(document.getElementById("v_item_pick")) { fillVItemPick(); return; }
+    const host=document.getElementById("v_item")||document.getElementById("v_barcode");
+    if(!host || !host.parentNode) return;
+    const lab=document.createElement("label");
+    lab.textContent="أو اختر صنفاً من القائمة (بدون باركود)";
+    lab.id="v_item_pick_lab";
+    const sel=document.createElement("select");
+    sel.id="v_item_pick";
+    host.parentNode.insertBefore(lab, host.nextSibling);
+    lab.parentNode.insertBefore(sel, lab.nextSibling);
+    sel.onchange=()=>{
+      const it=(companyDB.items||[]).find(i=>i.id===sel.value);
+      if(!it) return;
+      const idEl=document.getElementById("v_item_id"); if(idEl) idEl.value=it.id;
+      const nEl=document.getElementById("v_item"); if(nEl) nEl.value=it.name||"";
+      const cEl=document.getElementById("v_item_code"); if(cEl) cEl.value=it.code||it.barcode||"";
+      const wh=typeof balOfItem==="function"?balOfItem(it.id):0;
+      const wEl=document.getElementById("v_wh_stock"); if(wEl) wEl.value=fmt(wh);
+      const vs=(window._vStock||[]).find(x=>x.item_id===it.id);
+      const cAr=document.getElementById("v_car_stock"); if(cAr) cAr.value=fmt(vs?vs.qty:0);
+    };
+    fillVItemPick();
+  }
+  ensureItemPick();
+  setTimeout(ensureItemPick, 800);
+  setTimeout(ensureItemPick, 2500);
+
+  const addBtn=document.getElementById("v_add_line");
+  if(addBtn) addBtn.onclick=()=>{
+    const msg=document.getElementById("v_msg");
+    ensureItemPick();
+    let itemId=(document.getElementById("v_item_id")||{}).value;
+    let itemName=(document.getElementById("v_item")||{}).value;
+    let itemCode=(document.getElementById("v_item_code")||{}).value;
+    const sel=document.getElementById("v_item_pick");
+    if(sel && sel.value){
+      const it=(companyDB.items||[]).find(i=>i.id===sel.value);
+      if(it){ itemId=it.id; itemName=it.name; itemCode=it.code||it.barcode||""; }
+    }
+    const qty=num((document.getElementById("v_qty")||{}).value);
+    if(!itemId||!itemName){ if(msg) msg.textContent="اختر صنفاً (بالباركود أو من القائمة)"; return; }
+    if(qty<=0){ if(msg) msg.textContent="أدخل كمية صحيحة"; return; }
+    // دمج نفس الصنف إن تكرر
+    const exist=vehicleCart.find(x=>x.item_id===itemId);
+    if(exist){ exist.qty=num(exist.qty)+qty; }
+    else vehicleCart.push({item_id:itemId, item_name:itemName, item_code:itemCode||"", qty:qty});
+    renderVehicleCart();
+    if(msg) msg.textContent="أُضيف للطلب · "+vehicleCart.length+" صنف — اختر الصنف التالي";
+    clearVehicleItemFields();
+  };
+
+  const btn=document.getElementById("v_submit");
+  if(btn) btn.onclick=async ()=>{
+    const msg=document.getElementById("v_msg");
+    if(btn.dataset.busy==="1"){ if(msg) msg.textContent="جاري الإرسال... انتظر"; return; }
+    if(!profile){ if(msg) msg.textContent="غير مسجّل الدخول"; return; }
+    const co=currentCompany||(coSelect&&coSelect.value);
+    const note=((document.getElementById("v_note")||{}).value)||"";
+    const batchId="B"+Date.now().toString(36);
+    // سطر حالي إن لم يُضف للسلة
+    if(!vehicleCart.length){
+      let itemId=(document.getElementById("v_item_id")||{}).value;
+      let itemName=(document.getElementById("v_item")||{}).value;
+      let itemCode=(document.getElementById("v_item_code")||{}).value;
+      const sel=document.getElementById("v_item_pick");
+      if(sel && sel.value){
+        const it=(companyDB.items||[]).find(i=>i.id===sel.value);
+        if(it){ itemId=it.id; itemName=it.name; itemCode=it.code||it.barcode||""; }
+      }
+      const qty=num((document.getElementById("v_qty")||{}).value);
+      if(itemId && itemName && qty>0) vehicleCart.push({item_id:itemId, item_name:itemName, item_code:itemCode||"", qty:qty});
+    }
+    if(!vehicleCart.length){ if(msg) msg.textContent="أضف صنفاً واحداً على الأقل"; return; }
+    // تحقق من رصيد المخزن لكل صنف
+    for(const line of vehicleCart){
+      const wh = typeof balOfItem==="function" ? balOfItem(line.item_id) : 0;
+      if(num(line.qty) > wh + 0.001){
+        if(msg) msg.textContent="✗ «"+(line.item_name||"")+"»: المطلوب "+fmt(line.qty)+" أكبر من المخزن "+fmt(wh);
+        return;
+      }
+    }
+    btn.dataset.busy="1";
+    if(msg) msg.textContent="جاري الإرسال...";
+    let ok=0, offline=0, rls=false;
+    const cartCopy=vehicleCart.slice();
+    // منع إعادة إرسال نفس السلة من الطابور: أزل vehicle_load القديمة لنفس الأصناف اليوم
+    try{
+      const q=loadQ().filter(it=>{
+        if(it.type!=="vehicle_load") return true;
+        const p=it.payload||{};
+        return !cartCopy.some(l=>String(l.item_id)===String(p.item_id) && String(p.load_date||"").slice(0,10)===new Date().toISOString().slice(0,10));
+      });
+      saveQ(q);
+    }catch(e){}
+    for(const line of cartCopy){
+      const payload={
+        rep_id:profile.user_id, company:co||currentCompany||"الراعي",
+        load_date:new Date().toISOString().slice(0,10),
+        item_code:line.item_code||"", item_name:line.item_name, item_id:line.item_id,
+        qty:num(line.qty), note:(note?note+" · ":"")+"batch:"+batchId, status:"pending"
+      };
+      try{
+        const r=await insertVehicleLoadRow(payload);
+        if(r && r.error) throw r.error;
+        if(r && r.offline){ offline++; if(r.rls) rls=true; }
+        else ok++;
+      }catch(e){
+        offline++;
+        if(/row-level security|RLS|policy/i.test(e.message||"")) rls=true;
+      }
+    }
+    vehicleCart=[]; renderVehicleCart(); clearVehicleItemFields();
+    const nEl=document.getElementById("v_note"); if(nEl) nEl.value="";
+    let text="";
+    if(ok) text+="✅ أُرسل "+ok+" صنف فريد للإدارة. ";
+    if(offline) text+="📦 حُفظ "+offline+" محلياً. ";
+    if(rls) text+="⚠ نفّذ schema_rls_vehicle_load.sql في Supabase.";
+    if(msg) msg.textContent=text||"تم";
+    btn.dataset.busy="0";
+    try{ updateQBadge(); }catch(e){}
+    try{ loadVehicleReqs(); }catch(e){}
+    // لا تُفرّغ الطابور فوراً إن نجح الإرسال المباشر — حتى لا يُعاد الإدراج
+    try{ if(offline && typeof flushQueue==="function") flushQueue(); }catch(e){}
+  };
+  window.fillVItemPick=fillVItemPick;
+})();
+
+// ===== مرتجعات عميل / سيارة =====
+async function saveCustReturn(){
+  const msg=$("r_msg"); if(msg){msg.className="msg"; msg.textContent="";}
+  try{
+    const cid=$("r_cust").value, iid=$("r_item").value;
+    if(!cid||!iid||num($("r_qty").value)<=0) throw new Error("أكمل العميل والصنف والكمية");
+    const cust=(companyDB.customers||[]).find(c=>c.id===cid)||{};
+    const item=(companyDB.items||[]).find(i=>i.id===iid)||{};
+    const row={
+      rep_id:user.id, company:currentCompany,
+      ret_date: ($("r_date")&&$("r_date").value)||today(),
+      customer_id:cid, customer_name:cust.name||"",
+      item_id:iid, item_code:item.code||"", item_name:item.name||"",
+      qty:num($("r_qty").value), price:num($("r_price").value),
+      dest: ($("r_dest")&&$("r_dest").value)||"vehicle",
+      note: ($("r_note")&&$("r_note").value)||"",
+      status:"pending", kind:"customer_return"
+    };
+    if(!isOnline()){
+      enqueue("return", row, "مرتجع "+(cust.name||"")+" → "+row.dest);
+      if(msg){msg.className="msg ok"; msg.textContent="حُفظ أوفلاين";}
+      updateQBadge(); return;
+    }
+    try{
+      // جدول عام عبر notifications + draft sales-like table; استخدم rep_sales_draft بملاحظة مرتجع إن لم يوجد جدول مخصص
+      const {error}=await sb.from("rep_sales_draft").insert({
+        rep_id:row.rep_id, company:row.company, sale_date:row.ret_date,
+        customer_id:row.customer_id, customer_name:row.customer_name,
+        item_code:row.item_code, item_name:"[مرتجع] "+row.item_name,
+        qty: -Math.abs(row.qty), price:row.price, disc:0, discAmt:0,
+        pay:"آجل", sale_type:"مرتجع", note:"وجهة:"+row.dest+" · "+row.note, status:"pending"
+      });
+      if(error) throw error;
+      if(msg){msg.className="msg ok"; msg.textContent="تم إرسال مرتجع العميل — بانتظار الاعتماد";}
+      $("r_qty").value=1; if($("r_note")) $("r_note").value="";
+    }catch(e){
+      enqueue("return", row, "مرتجع "+(cust.name||""));
+      if(msg){msg.className="msg ok"; msg.textContent="حُفظ أوفلاين: "+(e.message||e);}
+      updateQBadge();
+    }
+  }catch(e){ if(msg){msg.className="msg err"; msg.textContent=e.message||String(e);} }
+}
+async function saveVehicleToWh(){
+  const msg=$("rv_msg"); if(msg){msg.className="msg"; msg.textContent="";}
+  try{
+    const iid=$("rv_item").value;
+    const q=num($("rv_qty").value);
+    if(!iid||q<=0) throw new Error("اختر صنفاً وكمية من رصيد السيارة");
+    const carBal = typeof vehicleQtyOf==="function" ? vehicleQtyOf(iid) : (typeof vehicleBalOf==="function" ? await vehicleBalOf(iid) : 0);
+    if(q > carBal+0.001) throw new Error("الكمية أكبر من رصيد السيارة (متاح "+(typeof fmt==="function"?fmt(carBal):carBal)+")");
+    const opt=$("rv_item").selectedOptions[0];
+    const item=(companyDB.items||[]).find(i=>i.id===iid)||{};
+    const row={
+      rep_id:user.id, company:currentCompany,
+      item_id:iid, item_name:item.name||(opt&&opt.textContent)||"",
+      item_code:item.code||item.barcode||"",
+      qty:q,
+      note:($("rv_note")&&$("rv_note").value)||"",
+      status:"pending", kind:"vehicle_to_warehouse"
+    };
+    if(!isOnline()){
+      enqueue("v2wh", row, "ارتجاع سيارة→مخزن "+row.item_name);
+      if(msg){msg.className="msg ok"; msg.textContent="حُفظ أوفلاين — يُزامَن عند الاتصال";}
+      updateQBadge(); return;
+    }
+    try{
+      const bc = row.item_code || row.item_id || (item&& (item.barcode||item.code)) || "NA";
+      const {error}=await insertDraft("rep_vehicle_load_draft", {
+        rep_id:row.rep_id, company:row.company,
+        load_date:today(), item_id:row.item_id, item_name:row.item_name,
+        item_code:row.item_code||"", barcode:bc, qty: -Math.abs(row.qty),
+        note:"تفريغ للمخزن · "+row.note, status:"pending"
+      });
+      if(error) throw error;
+      if(msg){msg.className="msg ok"; msg.textContent="تم إرسال طلب الارتجاع (سيارة → مخزن) — بانتظار اعتماد الإدارة";}
+      $("rv_qty").value=1; if($("rv_note")) $("rv_note").value="";
+      try{ if(typeof fillReturnSelects==="function") fillReturnSelects(); }catch(e){}
+    }catch(e){
+      enqueue("v2wh", row, "ارتجاع "+row.item_name);
+      if(msg){msg.className="msg ok"; msg.textContent="حُفظ أوفلاين: "+(e.message||e);}
+      updateQBadge();
+    }
+  }catch(e){ if(msg){msg.className="msg err"; msg.textContent=e.message||String(e);} }
+}
+function fillReturnSelects(){
+  const custs=companyDB.customers||[], items=companyDB.items||[];
+  if($("r_cust")) $("r_cust").innerHTML='<option value="">— اختر —</option>'+custs.map(c=>`<option value="${c.id}">${c.name}</option>`).join("");
+  if($("r_item")) $("r_item").innerHTML='<option value="">— اختر —</option>'+items.map(i=>`<option value="${i.id}" data-w="${i.w||0}" data-r="${i.r||0}">${i.code||""} — ${i.name}</option>`).join("");
+}
+if(typeof $==="function" || true){
+  document.addEventListener("click",function(ev){
+    if(ev.target && ev.target.id==="r_save") saveCustReturn();
+    if(ev.target && ev.target.id==="rv_save") saveVehicleToWh();
+  });
+}
+
+async function shareDaySummaryWhatsApp(){
+  try{
+    const from=($("dayFrom")&&$("dayFrom").value)||"";
+    const to=($("dayTo")&&$("dayTo").value)||"";
+    const rep=(profile&&profile.name)||"";
+    const co=currentCompany||"";
+    let lines=["ملخص يومي — "+rep,"الشركة: "+co,"الفترة: "+(from||"—")+" → "+(to||"—"),""];
+    // KPIs text
+    const kpis=$("dayKpis");
+    if(kpis) lines.push(kpis.innerText.replace(/\s+/g," ").trim());
+    lines.push("","— مبيعات —");
+    document.querySelectorAll("#daySales tr").forEach(tr=>{
+      const cells=[...tr.querySelectorAll("td")].map(td=>td.innerText.trim());
+      if(cells.length) lines.push(cells.join(" · "));
+    });
+    lines.push("","— تحصيلات —");
+    document.querySelectorAll("#dayCols tr").forEach(tr=>{
+      const cells=[...tr.querySelectorAll("td")].map(td=>td.innerText.trim());
+      if(cells.length) lines.push(cells.join(" · "));
+    });
+    const text=lines.join("\n");
+    if(navigator.share){
+      try{ await navigator.share({title:"ملخص يومي", text:text}); return; }catch(e){}
+    }
+    const url="https://wa.me/?text="+encodeURIComponent(text);
+    window.open(url,"_blank");
+  }catch(e){ alert(e.message||e); }
+}
+setTimeout(function(){
+  const b=document.getElementById("dayShareWa");
+  if(b) b.onclick=shareDaySummaryWhatsApp;
+}, 500);
+
+
+// ربط أزرار الفاتورة الثابتة
+setTimeout(function(){
+  const bp=document.getElementById("btnInvPrint");
+  const bw=document.getElementById("btnInvWa");
+  if(bp) bp.onclick=function(){ if(window.__lastInv) printInvoice(window.__lastInv); else alert("أرسل بيعاً أولاً لإظهار الفاتورة"); };
+  if(bw) bw.onclick=function(){
+    if(!window.__lastInv){ alert("أرسل بيعاً أولاً لإظهار الفاتورة"); return; }
+    let phone=window.__lastInv.phone||"";
+    if(!phone) phone=prompt("رقم واتساب العميل:","")||"";
+    sendInvoiceWhatsApp(window.__lastInv, phone);
+  };
+}, 800);
+
+
+// تنبيه إن ملف البذرة غير محمّل
+window.addEventListener("DOMContentLoaded", function(){
+  if(!window.COMPANY_SEEDS){
+    console.error("company_seeds.js غير محمّل — ضع الملف بجانب rep.html");
+  } else {
+    console.log("COMPANY_SEEDS ready", Object.keys(window.COMPANY_SEEDS), Object.keys(window.COMPANY_SEEDS).map(k=>{
+      const d=window.COMPANY_SEEDS[k];
+      return k+":"+((d.items||[]).length)+"i/"+((d.customers||[]).length)+"c";
+    }));
+  }
+});
+
+
+document.addEventListener("change", function(ev){
+  if(ev.target && (ev.target.id==="r_item" || ev.target.id==="r_cust")){
+    const iid=($("r_item")&&$("r_item").value)||"";
+    const cid=($("r_cust")&&$("r_cust").value)||"";
+    if(!iid) return;
+    // ابحث عن آخر بيع لهذا العميل/الصنف واحسب سعر الوحدة بعد الخصم
+    let unitNet=null;
+    const sales=(companyDB&&companyDB.sales)||[];
+    const lines=sales.filter(s=>s.itemId===iid && (!cid || s.customerId===cid)).slice().reverse();
+    if(lines.length){
+      const s=lines[0];
+      const q=num(s.qty), p=num(s.price), d=num(s.disc), da=num(s.discAmt);
+      let net=q*p; if(d) net=net*(1-d/100); net=Math.max(0, net-da);
+      if(q>0) unitNet=net/q;
+    }
+    if(unitNet==null){
+      const o=$("r_item")&&$("r_item").selectedOptions[0];
+      unitNet = o ? num(o.dataset.w||o.dataset.r||0) : 0;
+    }
+    if($("r_price")) $("r_price").value = Math.round(unitNet*100000)/100000;
+  }
+});
+
+</script>
+
+<footer class="ay-footer no-print" style="text-align:center;margin:28px 12px 16px;padding:12px 10px;font-size:.72rem;color:#64748b;border-top:1px solid #e2e8f0;line-height:1.6">
+  تصميم وبرمجة د.م/ ايمن زغلول — ت/ 01063188440
+</footer>
+
+</body>
+</html>

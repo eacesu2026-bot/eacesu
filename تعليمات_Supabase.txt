@@ -1,0 +1,58 @@
+# نظام الحسابات السحابي (Supabase)
+
+## ماذا يوفّر؟
+- قاعدة بيانات جاهزة (PostgreSQL + JSON)
+- تسجيل دخول بالبريد وكلمة المرور
+- مزامنة فورية (Realtime) بين الأجهزة
+- الواجهة كما هي (HTML + JavaScript فقط)
+
+## خطوات التشغيل (مرة واحدة)
+
+### 1) إنشاء مشروع Supabase
+1. ادخل https://supabase.com وسجّل حسابًا
+2. New Project → اختر اسمًا وكلمة مرور قاعدة البيانات
+3. من Settings → API انسخ:
+   - Project URL
+   - anon public key
+
+### 2) ضبط config.js
+افتح ملف `config.js` وضع القيم:
+
+```js
+window.SUPABASE_URL = "https://xxxx.supabase.co";
+window.SUPABASE_ANON_KEY = "eyJhbGciOi...";
+window.CLOUD_ENABLED = true;
+```
+
+### 3) إنشاء الجداول
+1. من لوحة Supabase → SQL Editor
+2. الصق محتوى `schema.sql` واضغط Run
+
+### 4) إنشاء مستخدم
+Authentication → Users → Add user
+- أدخل البريد وكلمة المرور
+- أو فعّل التسجيل من Authentication → Providers → Email
+
+### 5) فتح النظام
+- ارفع المجلد بالكامل على أي استضافة ثابتة (Netlify / GitHub Pages / أو افتح login.html محليًا)
+- افتح `login.html` → سجّل الدخول
+- اختر الشركة — عند أول فتح تُرفع بيانات JSON إلى السحابة تلقائيًا
+
+## كيف تعمل المزامنة؟
+- كل ضغطة «حفظ» داخل النظام تحفظ محليًا + في Supabase
+- أي تعديل من جهاز آخر يصل خلال ثوانٍ عبر Realtime
+- بدون إنترنت أو بدون تسجيل: يعمل النظام محليًا كالسابق
+
+## أمان
+- لا تضع service_role key في الواجهة أبدًا — استخدم anon فقط
+- سياسات RLS تسمح لأي مستخدم مسجّل بقراءة/كتابة بيانات الشركات (مناسب لفريق صغير)
+- لفصل الشركات لاحقًا يمكن تقييد السياسات حسب المستخدم
+
+## الملفات
+- login.html — تسجيل الدخول
+- index.html — اختيار الشركة
+- config.js — مفاتيح Supabase
+- cloud-sync.js — طبقة المزامنة
+- schema.sql — جداول القاعدة
+- حسابات_*.html — النظام
+- *.json — آخر نسخة بيانات (بذرة أولية)

@@ -1,0 +1,1869 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,viewport-fit=cover"/>
+<title>إدارة المندوبين</title>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<script src="config.js"></script>
+<script src="io-tools.js"></script>
+<script src="company_seeds.js"></script>
+<script src="notify.js"></script>
+<style>
+:root{--bg:#eef1f6;--s:#fff;--bd:#94a3b8;--t:#0f172a;--m:#334155;--p:#1d4ed8;--g:#15803d;--r:#b91c1c;--o:#c2410c;--c:#0e7490}
+*{box-sizing:border-box;margin:0;padding:0}
+body{font-family:Segoe UI,Tahoma,Arial;background:var(--bg);color:var(--t);padding:16px}
+h1{font-size:1.2rem;margin-bottom:6px} h1 span{color:var(--p)}
+.sub{color:var(--m);font-size:.82rem;margin-bottom:12px}
+.bar{display:flex;flex-wrap:wrap;gap:8px;margin-bottom:12px;align-items:end}
+label{font-size:.72rem;color:var(--m);display:flex;flex-direction:column;gap:4px}
+select,input,textarea,button{padding:8px 10px;border-radius:8px;border:1px solid var(--bd);font-size:.85rem;font-family:inherit}
+button{background:var(--p);color:#fff;border:0;cursor:pointer;font-weight:600}
+button.g{background:var(--g)} button.r{background:var(--r)} button.o{background:var(--o)}
+button.ghost{background:#fff;color:var(--t);border:1px solid var(--bd)}
+.grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(280px,1fr));gap:12px}
+.card{background:var(--s);border:1px solid var(--bd);border-radius:12px;padding:14px;margin-bottom:12px}
+.card h2{font-size:.92rem;margin-bottom:10px;border-bottom:2px solid var(--p);padding-bottom:6px}
+table{width:100%;border-collapse:collapse;font-size:.78rem}
+th,td{border:1px solid #e2e8f0;padding:6px;text-align:right}
+th{background:#e2e8f0}
+.st-pending{color:var(--o);font-weight:700}.st-approved{color:var(--g)}.st-rejected{color:var(--r)}
+.msg{font-size:.8rem;margin:8px 0;min-height:1.2em}.msg.ok{color:var(--g)}.msg.err{color:var(--r)}
+.map-link{color:var(--p);font-weight:600}
+.kpi{display:inline-block;background:#e2e8f0;border-radius:8px;padding:8px 12px;margin:4px;font-size:.8rem}
+.kpi b{display:block;font-size:1.1rem}
+.modal{display:none;position:fixed;inset:0;background:rgba(0,0,0,.45);z-index:40;align-items:center;justify-content:center;padding:16px}
+.modal.open{display:flex}
+.modal .box{background:#fff;border-radius:12px;padding:16px;width:100%;max-width:480px;max-height:90vh;overflow:auto}
+.modal h3{margin-bottom:10px}
+.row2{display:grid;grid-template-columns:1fr 1fr;gap:8px}
+.chk-cos label{flex-direction:row;align-items:center;gap:6px;font-size:.8rem;color:var(--t)}
+
+@media(max-width:640px){
+  body{padding:10px}
+  table{font-size:.7rem}
+  .bar{flex-direction:column;align-items:stretch}
+  .bar label,.bar button{width:100%}
+  .modal .box{padding:12px}
+  th,td{padding:4px}
+}
+</style>
+</head>
+<body>
+<h1>إدارة <span>المندوبين</span></h1>
+<p class="sub">إنشاء حسابات · اعتماد/تعديل المسودات · إشعارات · تتبع المواقع — مناسب لـ GitHub + Vercel</p>
+<div class="bar">
+  <label>الشركة
+    <select id="company">
+      <option value="الراعي">الراعي</option>
+      <option value="الحموي">الحموي</option>
+      <option value="زدنا">زدنا</option>
+      <option value="فوليانا">فوليانا</option>
+      <option value="بسكو مصر">بسكو مصر</option>
+      <option value="ابويونس للتجارة والتوكيلات">ابويونس للتجارة والتوكيلات</option>
+      <option value="__all__">كل الشركات</option>
+    </select>
+  </label>
+  <button type="button" id="btnLoad">تحديث</button>
+  <button type="button" class="ghost" id="btnLogin">تسجيل دخول إداري</button>
+  <button type="button" class="o" id="btnNewRep">+ مندوب جديد</button>
+  <button type="button" class="g" id="btnSyncCompanies" title="رفع آخر بيانات محلية لكل شركة إلى السحابة ليظهر للمندوب">☁ مزامنة بيانات الشركات → السحابة</button>
+  <span id="userInfo" class="sub"></span>
+</div>
+<div class="msg" id="msg"></div>
+<div id="kpis"></div>
+
+<div class="card">
+  <h2>مندوبو النظام</h2>
+  <div style="overflow:auto">
+    <table>
+      <thead><tr><th>الاسم</th><th>المسمى</th><th>يوزر/بريد</th><th>شركات</th><th>هاتف</th><th>حالة</th><th></th></tr></thead>
+      <tbody id="repsBody"></tbody>
+    </table>
+  </div>
+</div>
+
+<div class="card">
+  <h2>مواقع المندوبين الآن</h2>
+  <div id="locList"></div>
+</div>
+
+
+<div class="card">
+  <h2>تحركات المندوب</h2>
+  <div class="bar">
+    <label>المندوب
+      <select id="movRep"><option value="">— الكل —</option></select>
+    </label>
+    <label>من<input type="date" id="movFrom"/></label>
+    <label>إلى<input type="date" id="movTo"/></label>
+    <button type="button" id="btnMov">عرض</button>
+  </div>
+  <div style="overflow:auto;max-height:360px">
+    <table>
+      <thead><tr><th>الوقت</th><th>مندوب</th><th>نوع</th><th>تفاصيل</th><th>الموقع</th></tr></thead>
+      <tbody id="movBody"></tbody>
+    </table>
+  </div>
+  <div id="movMapLinks" style="margin-top:8px"></div>
+</div>
+
+<div class="card">
+  <h2>مبيعات المندوبين</h2>
+  <div class="bar">
+    <label>المندوب
+      <select id="saleRepFilter"><option value="">— الكل —</option></select>
+    </label>
+    <label>من<input type="date" id="saleRepFrom"/></label>
+    <label>إلى<input type="date" id="saleRepTo"/></label>
+    <button type="button" id="btnSaleRep">عرض</button>
+  </div>
+  <div id="saleRepKpis"></div>
+  <div style="overflow:auto;max-height:360px">
+    <table>
+      <thead><tr><th>مندوب</th><th>عدد العمليات</th><th>قيمة معتمدة</th><th>معلّق</th><th>مرفوض</th></tr></thead>
+      <tbody id="saleRepBody"></tbody>
+    </table>
+  </div>
+</div>
+
+<div class="card" id="ownerNotesCard">
+  <h2>ملاحظات صاحب النشاط</h2>
+  <div id="ownerNotesBox" class="muted" style="font-size:.82rem;line-height:1.6;max-height:220px;overflow:auto">—</div>
+  <button type="button" class="ghost" id="btnReloadOwnerNotes" style="margin-top:8px">تحديث الملاحظات</button>
+</div>
+
+<div class="card">
+  <h2>مبيعات بانتظار الاعتماد</h2>
+  <div style="overflow:auto">
+    <table>
+      <thead><tr><th>☐</th><th>مندوب</th><th>تاريخ</th><th>عميل</th><th>صنف</th><th>كمية</th><th>سعر</th><th>صافي</th><th>دفع</th><th></th></tr></thead>
+      <tbody id="salesBody"></tbody>
+    </table>
+  </div>
+  <div style="margin-top:10px;display:flex;gap:8px;flex-wrap:wrap">
+    <button class="g" type="button" id="btnApproveSales">اعتماد المحدد → النظام</button>
+    <button class="r" type="button" id="btnRejectSales">رفض المحدد</button>
+  </div>
+</div>
+
+<div class="card">
+  <h2>تحصيلات بانتظار الاعتماد</h2>
+  <div style="overflow:auto">
+    <table>
+      <thead><tr><th>☐</th><th>مندوب</th><th>تاريخ</th><th>عميل</th><th>مبلغ</th><th>طريقة</th><th></th></tr></thead>
+      <tbody id="colBody"></tbody>
+    </table>
+  </div>
+  <div style="margin-top:10px;display:flex;gap:8px;flex-wrap:wrap">
+    <button class="g" type="button" id="btnApproveCol">اعتماد المحدد → النظام</button>
+    <button class="r" type="button" id="btnRejectCol">رفض المحدد</button>
+  </div>
+</div>
+
+
+<div class="card">
+  <h2>تقرير أداء المندوبين — مبيعات · كاش · آجل · تحصيل</h2>
+  <div class="bar" style="margin-bottom:8px">
+    <label>من<input type="date" id="perfFrom"/></label>
+    <label>إلى<input type="date" id="perfTo"/></label>
+    <button type="button" id="btnPerf">عرض التقرير</button>
+  </div>
+  <div style="overflow:auto">
+    <table>
+      <thead><tr>
+        <th>المندوب</th>
+        <th>أسطر بيع</th><th>إجمالي بيع</th><th>كاش</th><th>آجل</th>
+        <th>تحميل ✓</th><th>تحميل ✗</th>
+        <th>تحصيلات</th><th>قيمة التحصيل</th><th>زيارات</th>
+        <th>معلّق بيع</th><th>معلّق تحصيل</th>
+      </tr></thead>
+      <tbody id="perfBody"></tbody>
+    </table>
+  </div>
+</div>
+
+<div class="card">
+  <h2>مصروفات بانتظار الاعتماد</h2>
+  <div style="overflow:auto">
+    <table>
+      <thead><tr><th>☐</th><th>مندوب</th><th>تاريخ</th><th>بيان</th><th>تصنيف</th><th>مبلغ</th><th></th></tr></thead>
+      <tbody id="expBody"></tbody>
+    </table>
+  </div>
+  <div style="margin-top:10px;display:flex;gap:8px;flex-wrap:wrap">
+    <button class="g" type="button" id="btnApproveExp">اعتماد المحدد → مصروفات النظام</button>
+    <button class="r" type="button" id="btnRejectExp">رفض المحدد</button>
+  </div>
+</div>
+
+
+<div class="card">
+  <h2>طلبات تحميل سيارة بانتظار الاعتماد</h2>
+  <p style="font-size:.72rem;color:var(--m);margin-bottom:8px">عند الاعتماد: يُخصم من مخزن الشركة ويُضاف لرصيد سيارة المندوب</p>
+  <div class="table-wrap"><table>
+    <thead><tr><th></th><th>مندوب</th><th>تاريخ</th><th>صنف</th><th>كمية</th><th>ملاحظة</th></tr></thead>
+    <tbody id="vloadBody"></tbody>
+  </table></div>
+  <div style="display:flex;gap:8px;margin-top:10px;flex-wrap:wrap">
+    <button class="g" type="button" id="btnApproveVLoad">اعتماد المحدد → خصم مخزن + رصيد سيارة</button>
+    <button class="r" type="button" id="btnRejectVLoad">رفض المحدد</button>
+    <button class="o" type="button" id="btnRebuildVStock" title="من حركات التحميل السابقة">إعادة بناء رصيد السيارة</button>
+  </div>
+</div>
+<div class="card">
+  <h2>سجل الزيارات</h2>
+  <div style="overflow:auto;max-height:400px">
+    <table>
+      <thead><tr><th>الوقت</th><th>مندوب</th><th>عميل/مكان</th><th>ملاحظات</th><th>الموقع</th></tr></thead>
+      <tbody id="visitBody"></tbody>
+    </table>
+  </div>
+</div>
+
+<!-- Modal: new rep -->
+<div class="modal" id="modalRep">
+  <div class="box">
+    <h3>إنشاء مندوب</h3>
+    <label>الاسم الظاهر<input id="nr_name"/></label>
+    <label>البريد (يوزر الدخول)<input id="nr_email" type="email" placeholder="rep1@company.com"/></label>
+    <label>كلمة المرور<input id="nr_pass" type="password" placeholder="6 أحرف على الأقل"/></label>
+    <label>الهاتف<input id="nr_phone"/></label>
+    <label>الصلاحية / المسمى
+      <select id="nr_job">
+        <option value="مندوب">مندوب</option>
+        <option value="مشرف">مشرف</option>
+      </select>
+    </label>
+    <div style="margin:8px 0;font-size:.8rem">الشركات: <button type="button" id="nr_allCos" style="font-size:.7rem;padding:2px 8px">تحديد الكل</button></div>
+    <div class="chk-cos" id="nr_cos">
+      <label><input type="checkbox" value="الراعي"/> الراعي</label>
+      <label><input type="checkbox" value="الحموي"/> الحموي</label>
+      <label><input type="checkbox" value="زدنا"/> زدنا</label>
+      <label><input type="checkbox" value="فوليانا"/> فوليانا</label>
+      <label><input type="checkbox" value="بسكو مصر"/> بسكو مصر</label>
+    </div>
+    <p class="sub" style="margin-top:8px">يتطلب تفعيل "Allow public signups" في Supabase Auth، أو أنشئ المستخدم يدويًا من Authentication ثم اربط الملف فقط.</p>
+    <div style="display:flex;gap:8px;margin-top:12px">
+      <button type="button" class="g" id="nr_save">إنشاء</button>
+      <button type="button" class="ghost" id="nr_cancel">إلغاء</button>
+    </div>
+    <div class="msg" id="nr_msg"></div>
+  </div>
+</div>
+
+<!-- Modal: edit sale -->
+<div class="modal" id="modalEditSale">
+  <div class="box">
+    <h3>تعديل مسودة بيع</h3>
+    <input type="hidden" id="es_id"/>
+    <label>التاريخ<input type="date" id="es_date"/></label>
+    <label>اسم العميل<input id="es_cust"/></label>
+    <label>اسم الصنف<input id="es_item"/></label>
+    <div class="row2">
+      <label>كمية<input type="number" id="es_qty" step="any"/></label>
+      <label>سعر<input type="number" id="es_price" step="any"/></label>
+    </div>
+    <div class="row2">
+      <label>خصم %<input type="number" id="es_disc" step="any"/></label>
+      <label>دفع<select id="es_pay"><option>آجل</option><option>كاش</option></select></label>
+    </div>
+    <label>ملاحظة للإدارة / المندوب<textarea id="es_note"></textarea></label>
+    <div style="display:flex;gap:8px;margin-top:12px;flex-wrap:wrap">
+      <button type="button" class="o" id="es_save">حفظ التعديل + إشعار المندوب</button>
+      <button type="button" class="g" id="es_approve">حفظ واعتماد</button>
+      <button type="button" class="ghost" id="es_cancel">إلغاء</button>
+    </div>
+  </div>
+</div>
+
+<!-- Modal: edit collection -->
+<div class="modal" id="modalEditCol">
+  <div class="box">
+    <h3>تعديل مسودة تحصيل</h3>
+    <input type="hidden" id="ec_id"/>
+    <label>التاريخ<input type="date" id="ec_date"/></label>
+    <label>اسم العميل<input id="ec_cust"/></label>
+    <div class="row2">
+      <label>المبلغ<input type="number" id="ec_amt" step="any"/></label>
+      <label>طريقة<select id="ec_method"><option>كاش</option><option>تحويل</option></select></label>
+    </div>
+    <label>ملاحظة<textarea id="ec_note"></textarea></label>
+    <div style="display:flex;gap:8px;margin-top:12px;flex-wrap:wrap">
+      <button type="button" class="o" id="ec_save">حفظ التعديل + إشعار</button>
+      <button type="button" class="g" id="ec_approve">حفظ واعتماد</button>
+      <button type="button" class="ghost" id="ec_cancel">إلغاء</button>
+    </div>
+  </div>
+</div>
+
+<script>
+const STORAGE_PREFIX="acc_abu_", STORAGE_SUFFIX="_v2";
+let sb=null, user=null;
+let profiles={}, pendingSales=[], pendingCols=[], pendingExps=[], visits=[], locations=[], allReps=[];
+
+
+function normalizeCompany(n){
+  const x=String(n||"").trim();
+  if(!x) return "";
+  if(x.indexOf("راعي")>=0||x==="1"||x.indexOf("شركة 1")>=0) return "الراعي";
+  if(x.indexOf("حموي")>=0||x==="2"||x.indexOf("شركة 2")>=0) return "الحموي";
+  if(x.indexOf("زدنا")>=0||x==="3"||x.indexOf("شركة 3")>=0) return "زدنا";
+  if(x.indexOf("فوليانا")>=0||x==="4"||x.indexOf("شركة 4")>=0) return "فوليانا";
+  if(x.indexOf("بسكو")>=0||x==="5"||x.indexOf("شركة 5")>=0) return "بسكو مصر";
+  return x;
+}
+function normRepName(n){
+  let s=String(n||"").replace(/\s+/g," ").trim();
+  if(!s) return "";
+  s=s.replace(/^(مشرف|مندوب|السائق|سائق)\s*[:：\-]?\s*/u,"").trim();
+  s=s.replace(/[()]/g,"").trim();
+  if(/^\d+([.,]\d+)?$/.test(s)) return "";
+  if(/^[0-9a-f]{8}-[0-9a-f-]{20,}$/i.test(s)) return "";
+  if(/^[0-9a-f]{16,}$/i.test(s)) return "";
+  if(/فهد/.test(s)) return "فهد ابراهيم";
+  if(/مصط+ف[ىي]/.test(s) || /مصطف[ىي]/.test(s)) return "مصطفى محمد فتحي";
+  return s;
+}
+function displayRepName(n){
+  const u=normRepName(n);
+  if(!u) return "بدون مندوب";
+  if(u==="فهد ابراهيم") return "مشرف: فهد ابراهيم";
+  if(u==="مصطفى محمد فتحي") return "مندوب: مصطفى محمد فتحي";
+  return "مندوب: "+u;
+}
+function sameRep(a,b){ const x=normRepName(a), y=normRepName(b); return !!x && x===y; }
+
+function num(v){const n=parseFloat(v);return isNaN(n)?0:n}
+function fmt(n){return num(n).toLocaleString("en-US",{maximumFractionDigits:2})}
+function lineTotal(q,p,d){return num(q)*num(p)*(1-num(d)/100)}
+function uid(){return Math.random().toString(16).slice(2)+Date.now().toString(16)}
+function storageKey(co){return STORAGE_PREFIX+co+STORAGE_SUFFIX}
+
+function initSB(){
+  const url=(window.SUPABASE_URL||"").trim();
+  const key=(window.SUPABASE_ANON_KEY||"").trim();
+  sb=supabase.createClient(url,key,{auth:{persistSession:true,autoRefreshToken:true}});
+}
+
+async function ensureLogin(){
+  initSB();
+  const {data}=await sb.auth.getSession();
+  if(data.session){ user=data.session.user; userInfo.textContent=user.email||""; return true; }
+  const email=prompt("بريد الإدارة:");
+  const pass=prompt("كلمة المرور:");
+  if(!email||!pass) return false;
+  const {data:d,error}=await sb.auth.signInWithPassword({email,password:pass});
+  if(error){ alert(error.message); return false; }
+  user=d.user; userInfo.textContent=user.email||""; return true;
+}
+
+function loadLocalDB(co){
+  try{ const raw=localStorage.getItem(storageKey(co)); if(raw) return JSON.parse(raw); }catch(e){}
+  return null;
+}
+function saveLocalDB(co, db){ localStorage.setItem(storageKey(co), JSON.stringify(db)); }
+
+function dbScore(db){
+  if(!db||typeof db!=="object") return 0;
+  return (db.items||[]).length*3 + (db.customers||[]).length*2 + (db.sales||[]).length
+    + (db.purchases||[]).length + (db.collections||[]).length + (db.suppliers||[]).length;
+}
+function emptyCompanyDB(){
+  return {items:[],customers:[],suppliers:[],sales:[],collections:[],purchases:[],expenses:[],payments:[],
+    customerReturns:[],supplierReturns:[],revenues:[],checks:[],employees:[],salaries:[],routes:[],
+    nextSaleInv:10001,openCash:0};
+}
+function ensureDBArrays(db){
+  if(!db) db=emptyCompanyDB();
+  ["items","customers","suppliers","sales","collections","purchases","expenses","payments",
+   "customerReturns","supplierReturns","revenues","checks","employees","salaries","routes","vehicleLoads"].forEach(k=>{
+    if(!Array.isArray(db[k])) db[k]=[];
+  });
+  if(db.nextSaleInv==null) db.nextSaleInv=10001;
+  if(db.openCash==null) db.openCash=0;
+  return db;
+}
+async function loadCloudDB(co){
+  try{
+    const {data,error}=await sb.from("company_data").select("data,updated_at").eq("id",co).maybeSingle();
+    if(error){ console.warn("loadCloudDB", error); return null; }
+    return data && data.data ? data.data : null;
+  }catch(e){ console.warn(e); return null; }
+}
+async function saveCloudDB(co, db){
+  db = ensureDBArrays(db);
+  // حماية: لا تستبدل سحابة غنية بنسخة فارغة
+  try{
+    const cur = await loadCloudDB(co);
+    if(cur && dbScore(db) < dbScore(cur) * 0.5 && dbScore(cur) > 5){
+      console.warn("saveCloudDB aborted: local/working copy much poorer than cloud", dbScore(db), dbScore(cur));
+      // ادمج المبيعات/التحصيلات الجديدة فقط
+      const merged = ensureDBArrays(JSON.parse(JSON.stringify(cur)));
+      const ids = new Set((merged.sales||[]).map(s=>s.id));
+      (db.sales||[]).forEach(s=>{ if(s && s.id && !ids.has(s.id)) merged.sales.push(s); });
+      const cids = new Set((merged.collections||[]).map(c=>c.id));
+      (db.collections||[]).forEach(c=>{ if(c && c.id && !cids.has(c.id)) merged.collections.push(c); });
+      const eids = new Set((merged.expenses||[]).map(e=>e.id));
+      (db.expenses||[]).forEach(e=>{ if(e && e.id && !eids.has(e.id)) merged.expenses.push(e); });
+      // عملاء جدد
+      const custIds = new Set((merged.customers||[]).map(c=>c.id));
+      (db.customers||[]).forEach(c=>{ if(c && c.id && !custIds.has(c.id)) merged.customers.push(c); });
+      db = merged;
+    }
+  }catch(e){ console.warn("merge guard", e); }
+  const {error}=await sb.from("company_data").upsert({
+    id:co, data:db, updated_at:new Date().toISOString(), updated_by:user?user.id:null
+  });
+  if(error) throw error;
+  saveLocalDB(co, db);
+  // كاش رصيد السيارة للإدارة
+  try{ localStorage.setItem("ay_vstock_"+co+"_touch", String(Date.now())); }catch(e){}
+  return db;
+}
+async function getDB(co){
+  let cloud = await loadCloudDB(co);
+  let local = loadLocalDB(co);
+  let seed = null;
+  try{
+    if(window.COMPANY_SEEDS && window.COMPANY_SEEDS[co]) seed = window.COMPANY_SEEDS[co];
+  }catch(e){}
+  const cands = [
+    {db:cloud, src:"cloud", sc:dbScore(cloud)},
+    {db:local, src:"local", sc:dbScore(local)},
+    {db:seed, src:"seed", sc:dbScore(seed)}
+  ].filter(x=>x.db);
+  cands.sort((a,b)=>b.sc-a.sc);
+  let db = cands.length ? JSON.parse(JSON.stringify(cands[0].db)) : emptyCompanyDB();
+  db = ensureDBArrays(db);
+  // إن السحابة أغنى تأكد من استخدامها أساساً
+  if(cloud && dbScore(cloud) >= dbScore(db)) db = ensureDBArrays(JSON.parse(JSON.stringify(cloud)));
+  // إن المحلي أغنى في المبيعات فقط — ادمج
+  if(local && dbScore(local) > 0){
+    const ids=new Set((db.sales||[]).map(s=>s.id));
+    (local.sales||[]).forEach(s=>{ if(s&&s.id&&!ids.has(s.id)) db.sales.push(s); });
+  }
+  console.info("[getDB]", co, "items", (db.items||[]).length, "sales", (db.sales||[]).length, "score", dbScore(db));
+  return db;
+}
+
+function findCustomer(db, id, name){
+  if(id){ const c=db.customers.find(x=>x.id===id); if(c) return c; }
+  if(name){ const c=db.customers.find(x=>x.name===name); if(c) return c; }
+  const neu={id:uid(), code:"", name:name||"عميل مندوب", phone:"", openBal:0};
+  db.customers.push(neu); return neu;
+}
+
+function balOfItem(db, itemId){
+  const it=(db.items||[]).find(i=>i.id===itemId);
+  let bal=it?num(it.openQty):0;
+  (db.purchases||[]).forEach(p=>{if(p.itemId===itemId) bal+=num(p.qty)});
+  (db.sales||[]).forEach(s=>{
+    if(s.itemId!==itemId) return;
+    // مبيعات المندوب لا تخصم من المخزن
+    if(s.fromRep || s.source==="rep" || s.source==="مندوب") return;
+    bal-=num(s.qty);
+  });
+  (db.customerReturns||[]).forEach(r=>{if(r.itemId===itemId) bal+=num(r.qty)});
+  (db.supplierReturns||[]).forEach(r=>{if(r.itemId===itemId) bal-=num(r.qty)});
+  return bal;
+}
+
+async function renderPerf(){
+  const co=company.value;
+  const from=perfFrom.value, to=perfTo.value;
+  if(!from||!to){ alert("حدد من وإلى"); return; }
+  if(!co || co==="__all__"){ alert("اختر شركة محددة"); return; }
+
+  const map={};
+  function ensure(id){
+    const key=id||"_none";
+    if(!map[key]) map[key]={
+      id:key, name:repName(id)||String(id||"بدون"),
+      sOk:0, sVal:0, sCash:0, sCredit:0, sQty:0,
+      cOk:0, cVal:0, visits:0, sPend:0, cPend:0, vOk:0, vRej:0, vPend:0
+    };
+    return map[key];
+  }
+  function inRange(d){
+    if(!d) return false;
+    const x=String(d).slice(0,10);
+    return x>=from && x<=to;
+  }
+  function payIsCash(p){
+    const s=String(p||"").trim();
+    return s==="كاش" || s.toLowerCase()==="cash";
+  }
+
+  // معلّق من المسودات فقط
+  try{
+    const {data:sales}=await sb.from("rep_sales_draft").select("*").eq("company",co);
+    (sales||[]).forEach(x=>{
+      if(!inRange(x.sale_date)&&!inRange(x.created_at)) return;
+      if(x.status==="pending") ensure(x.rep_id).sPend++;
+    });
+  }catch(e){ console.warn(e); }
+
+  // المبيعات المعتمدة: من بيانات الشركة (مصدر الحسابات) — كاش / آجل
+  try{
+    const db=await getDB(co);
+    let companyHad=0;
+    (db.sales||[]).forEach(s=>{
+      if(s.source==="vehicle_load" || String(s.inv||"").indexOf("VL-")===0) return;
+      if((s.note||"").indexOf("تحميل سيارة")>=0) return;
+      if(!inRange(s.date)) return;
+      let rid=s.rep;
+      let m;
+      if(rid && allReps.some(p=>p.user_id===rid)) {
+        m=ensure(rid);
+      } else {
+        const found=allReps.find(p=>{
+          const n=p.name||"";
+          return n===rid || n.indexOf(String(rid||""))>=0 || String(rid||"").indexOf(n)>=0;
+        });
+        m=ensure(found?found.user_id:(rid||"_none"));
+        if(found) m.name=found.name;
+        else if(rid) m.name=String(rid);
+      }
+      const val=lineTotal(s.qty,s.price,s.disc,s.discAmt);
+      m.sOk++; m.sVal+=val; m.sQty+=num(s.qty);
+      if(payIsCash(s.pay)) m.sCash+=val; else m.sCredit+=val;
+      companyHad++;
+    });
+    // إن لم توجد مبيعات في الشركة، استخدم المسودات المعتمدة كاحتياط
+    if(!companyHad){
+      const {data:sales}=await sb.from("rep_sales_draft").select("*").eq("company",co);
+      (sales||[]).forEach(x=>{
+        if(!inRange(x.sale_date)&&!inRange(x.created_at)) return;
+        if(x.status!=="approved") return;
+        const m=ensure(x.rep_id);
+        const val=lineTotal(x.qty,x.price,x.disc);
+        m.sOk++; m.sVal+=val; m.sQty+=num(x.qty);
+        if(payIsCash(x.pay)) m.sCash+=val; else m.sCredit+=val;
+      });
+    }
+  }catch(e){ console.warn("company sales perf", e); }
+
+  try{
+    const {data:cols}=await sb.from("rep_collections_draft").select("*").eq("company",co);
+    (cols||[]).forEach(x=>{
+      if(!inRange(x.col_date)&&!inRange(x.created_at)) return;
+      const m=ensure(x.rep_id);
+      if(x.status==="approved"){ m.cOk++; m.cVal+=num(x.amt); }
+      else if(x.status==="pending") m.cPend++;
+    });
+  }catch(e){}
+  try{
+    const {data:vis}=await sb.from("rep_visits").select("*").eq("company",co);
+    (vis||[]).forEach(x=>{
+      if(!inRange(x.visited_at)) return;
+      ensure(x.rep_id).visits++;
+    });
+  }catch(e){}
+  try{
+    const {data:vloads}=await sb.from("rep_vehicle_load_draft").select("*").eq("company",co);
+    (vloads||[]).forEach(x=>{
+      if(!inRange(x.load_date)&&!inRange(x.created_at)) return;
+      const m=ensure(x.rep_id);
+      if(x.status==="approved") m.vOk++;
+      else if(x.status==="rejected") m.vRej++;
+      else if(x.status==="pending") m.vPend++;
+    });
+  }catch(e){}
+
+  allReps.filter(p=>{
+    const cos=Array.isArray(p.companies)?p.companies:(p.company?[p.company]:[]);
+    return !cos.length || cos.includes(co);
+  }).forEach(p=>ensure(p.user_id));
+
+  const rows=Object.values(map).filter(m=>m.id!=="_none" || m.sVal>0).sort((a,b)=>b.sVal-a.sVal);
+
+  // ملخص إجمالي
+  let totCash=0, totCredit=0, totVal=0, totCol=0, totLines=0;
+  rows.forEach(m=>{ totCash+=m.sCash; totCredit+=m.sCredit; totVal+=m.sVal; totCol+=m.cVal; totLines+=m.sOk; });
+  let sumEl=document.getElementById("perfSummary");
+  if(!sumEl){
+    const card=perfBody && perfBody.closest(".card");
+    if(card){
+      sumEl=document.createElement("div");
+      sumEl.id="perfSummary";
+      sumEl.style.cssText="display:flex;flex-wrap:wrap;gap:10px;margin:10px 0";
+      card.insertBefore(sumEl, card.querySelector(".table-wrap")||perfBody.parentNode);
+    }
+  }
+  if(sumEl){
+    sumEl.innerHTML=`
+      <div class="kpi"><div class="l">إجمالي البيع</div><div class="v">${fmt(totVal)}</div></div>
+      <div class="kpi"><div class="l">كاش</div><div class="v" style="color:var(--g)">${fmt(totCash)}</div></div>
+      <div class="kpi"><div class="l">آجل</div><div class="v" style="color:var(--o)">${fmt(totCredit)}</div></div>
+      <div class="kpi"><div class="l">أسطر / حجم</div><div class="v">${totLines}</div></div>
+      <div class="kpi"><div class="l">تحصيلات</div><div class="v">${fmt(totCol)}</div></div>`;
+  }
+
+  perfBody.innerHTML=rows.map(m=>`<tr>
+    <td><b>${m.name}</b></td>
+    <td>${m.sOk}</td>
+    <td><b>${fmt(m.sVal)}</b></td>
+    <td style="color:var(--g)">${fmt(m.sCash)}</td>
+    <td style="color:var(--o)">${fmt(m.sCredit)}</td>
+    <td>${m.vOk||0}</td><td>${m.vRej||0}</td>
+    <td>${m.cOk}</td><td>${fmt(m.cVal)}</td>
+    <td>${m.visits}</td>
+    <td>${m.sPend}</td><td>${m.cPend}</td>
+  </tr>`).join("")||'<tr><td colspan="12">لا بيانات في الفترة</td></tr>';
+}
+
+function findItem(db, code, name){
+  let it=null;
+  if(code) it=db.items.find(x=>String(x.code)===String(code));
+  if(!it && name) it=db.items.find(x=>x.name===name);
+  if(it) return it;
+  const neu={id:uid(), code:code||"", name:name||"صنف", unit:"قطعة", w:0, r:0};
+  db.items.push(neu); return neu;
+}
+
+async function notifyRep(repId, title, body, kind, ref_type, ref_id){
+  if(!repId) return;
+  await sb.from("rep_notifications").insert({
+    user_id:repId, title, body, kind:kind||"info", ref_type:ref_type||"", ref_id:ref_id||null
+  });
+}
+
+async function refresh(){
+  msg.textContent="جاري التحميل..."; msg.className="msg";
+  try{
+    if(!user){ const ok=await ensureLogin(); if(!ok) return; }
+    const co=company.value;
+    const {data:profs}=await sb.from("rep_profiles").select("*");
+    // تجميع صفوف (user_id, company) إلى ملف واحد لكل مندوب
+    const byUser={};
+    (profs||[]).forEach(p=>{
+      if(!byUser[p.user_id]){
+        byUser[p.user_id]={user_id:p.user_id, name:p.name, username:p.username||"", phone:p.phone||"", active:p.active!==false, job_title:p.job_title||"مندوب", companies:[]};
+      }
+      if(Array.isArray(p.companies)) p.companies.forEach(c=>{ if(c && !byUser[p.user_id].companies.includes(c)) byUser[p.user_id].companies.push(c); });
+      if(p.company && !byUser[p.user_id].companies.includes(p.company)) byUser[p.user_id].companies.push(p.company);
+      if(p.job_title) byUser[p.user_id].job_title=p.job_title;
+      if(p.active===false) byUser[p.user_id].active=false;
+      if(p.name) byUser[p.user_id].name=p.name;
+    });
+    allReps=Object.values(byUser);
+    profiles={}; allReps.forEach(p=>profiles[p.user_id]=p);
+    let s,c,ex;
+    if(co==="__all__"){
+      const rs=await sb.from("rep_sales_draft").select("*").eq("status","pending").order("created_at",{ascending:false}).limit(200);
+      const rc=await sb.from("rep_collections_draft").select("*").eq("status","pending").order("created_at",{ascending:false}).limit(200);
+      const re=await sb.from("rep_expenses_draft").select("*").eq("status","pending").order("created_at",{ascending:false}).limit(200);
+      s=rs.data; c=rc.data; ex=re.data;
+    } else {
+      let rs=await sb.from("rep_sales_draft").select("*").eq("company",co).eq("status","pending").order("created_at",{ascending:false});
+      let rc=await sb.from("rep_collections_draft").select("*").eq("company",co).eq("status","pending").order("created_at",{ascending:false});
+      let re=await sb.from("rep_expenses_draft").select("*").eq("status","pending").eq("company",co).order("created_at",{ascending:false});
+      s=rs.data; c=rc.data; ex=re.data;
+      // إن لم تظهر نتائج — اجلب كل المعلّق ثم صفِّ محلياً (أسماء شركات قديمة)
+      if(!(s&&s.length) && !(c&&c.length) && !(ex&&ex.length)){
+        const allS=await sb.from("rep_sales_draft").select("*").eq("status","pending").order("created_at",{ascending:false}).limit(200);
+        const allC=await sb.from("rep_collections_draft").select("*").eq("status","pending").limit(200);
+        const allE=await sb.from("rep_expenses_draft").select("*").eq("status","pending").limit(200);
+        const norm=n=>{
+          const x=String(n||"");
+          if(x.indexOf("راعي")>=0||x==="1"||x.indexOf("شركة 1")>=0) return "الراعي";
+          if(x.indexOf("حموي")>=0||x==="2") return "الحموي";
+          if(x.indexOf("زدنا")>=0||x==="3") return "زدنا";
+          if(x.indexOf("فوليانا")>=0||x==="4") return "فوليانا";
+          if(x.indexOf("بسكو")>=0||x==="5") return "بسكو مصر";
+          return x;
+        };
+        s=(allS.data||[]).filter(x=>norm(x.company)===co || x.company===co);
+        c=(allC.data||[]).filter(x=>norm(x.company)===co || x.company===co);
+        ex=(allE.data||[]).filter(x=>norm(x.company)===co || x.company===co);
+      }
+    }
+    await loadVehicleLoads(co);
+    const {data:v}=await sb.from("rep_visits").select("*").eq("company",co).order("visited_at",{ascending:false}).limit(100);
+    const {data:loc}=await sb.from("rep_locations").select("*").eq("company",co);
+    pendingSales=s||[]; pendingCols=c||[]; pendingExps=ex||[]; visits=v||[]; locations=loc||[];
+    render();
+    fillRepSelects();
+    // defaults dates
+    const t=new Date().toISOString().slice(0,10);
+    const a=new Date(); a.setDate(1);
+    const am=a.toISOString().slice(0,10);
+    if($("movFrom")&&!movFrom.value){ movFrom.value=am; movTo.value=t; }
+    if($("saleRepFrom")&&!saleRepFrom.value){ saleRepFrom.value=am; saleRepTo.value=t; }
+    renderMovements(); renderRepSales();
+    msg.className="msg ok"; msg.textContent="تم التحديث · "+new Date().toLocaleTimeString("ar-EG");
+  }catch(e){ msg.className="msg err"; msg.textContent=e.message||String(e); }
+}
+
+function jobTitleFor(name){
+  const n=String(name||"").trim();
+  if(n==="فهد" || n.startsWith("فهد ") || n.endsWith(" فهد")) return "مشرف";
+  return "مندوب";
+}
+
+function repName(id){
+  const p=profiles[id];
+  const name=(p&&p.name)||String(id||"").slice(0,8);
+  return jobTitleFor(name)+" "+name;
+}
+
+function render(){
+  kpis.innerHTML=`
+    <span class="kpi">مبيعات معلّقة <b>${pendingSales.length}</b></span>
+    <span class="kpi">تحصيل معلّق <b>${pendingCols.length}</b></span>
+    <span class="kpi">مصروف معلّق <b>${pendingExps.length}</b></span>
+    <span class="kpi">زيارات <b>${visits.length}</b></span>
+    <span class="kpi">مواقع حية <b>${locations.length}</b></span>
+    <span class="kpi">مندوبون <b>${allReps.length}</b></span>`;
+
+  repsBody.innerHTML=allReps.map(p=>{
+    const cos=Array.isArray(p.companies)?p.companies.join("، "):(p.company||"");
+    const role=p.job_title||"مندوب";
+    const roleBadge=role==="مشرف"?'<span class="st-approved">مشرف</span>':'<span class="badge">مندوب</span>';
+    return `<tr>
+      <td>${p.name}</td><td>${roleBadge}</td><td>${p.username||"—"}</td><td>${cos}</td><td>${p.phone||""}</td>
+      <td>${p.active?"نشط":"موقوف"}</td>
+      <td><button type="button" class="ghost" data-tog="${p.user_id}">${p.active?"إيقاف":"تفعيل"}</button></td>
+    </tr>`;
+  }).join("")||'<tr><td colspan="7">لا مندوبين — أنشئ من الزر أعلاه</td></tr>';
+
+  document.querySelectorAll("[data-tog]").forEach(b=>b.onclick=async()=>{
+    const id=b.dataset.tog; const p=profiles[id]; if(!p) return;
+    await sb.from("rep_profiles").update({active:!p.active}).eq("user_id",id);
+    await refresh();
+  });
+
+  locList.innerHTML=locations.length?locations.map(l=>{
+    const age=Math.round((Date.now()-new Date(l.updated_at).getTime())/60000);
+    return `<div style="padding:6px 0;border-bottom:1px solid #e2e8f0">
+      <b>${repName(l.rep_id)}</b> · قبل ${age} د
+      · <a class="map-link" target="_blank" href="https://maps.google.com/?q=${l.lat},${l.lng}">خريطة</a>
+    </div>`;
+  }).join(""):'<p class="sub">لا مواقع حالياً</p>';
+
+  salesBody.innerHTML=pendingSales.map(x=>`<tr data-co="${x.company||""}">
+    <td><input type="checkbox" data-sid="${x.id}"/></td>
+    <td>${repName(x.rep_id)}</td><td>${x.sale_date}</td><td>${x.customer_name}</td>
+    <td>${x.item_name}</td><td>${num(x.qty)<0?("تفريغ "+fmt(Math.abs(num(x.qty)))):fmt(x.qty)}</td><td>${fmt(x.price)}</td>
+    <td>${fmt(lineTotal(x.qty,x.price,x.disc))}</td><td>${x.pay}</td>
+    <td style="white-space:nowrap">
+      <button type="button" class="o" data-edit-s="${x.id}">تعديل</button>
+      <button type="button" class="g" data-one-s="${x.id}">اعتماد</button>
+    </td>
+  </tr>`).join("")||'<tr><td colspan="10">لا مبيعات معلّقة</td></tr>';
+
+  colBody.innerHTML=pendingCols.map(x=>`<tr>
+    <td><input type="checkbox" data-cid="${x.id}"/></td>
+    <td>${repName(x.rep_id)}</td><td>${x.col_date}</td><td>${x.customer_name}</td>
+    <td>${fmt(x.amt)}</td><td>${x.method}</td>
+    <td style="white-space:nowrap">
+      <button type="button" class="o" data-edit-c="${x.id}">تعديل</button>
+      <button type="button" class="g" data-one-c="${x.id}">اعتماد</button>
+    </td>
+  </tr>`).join("")||'<tr><td colspan="7">لا تحصيلات معلّقة</td></tr>';
+
+  expBody.innerHTML=pendingExps.map(x=>`<tr>
+    <td><input type="checkbox" data-eid="${x.id}"/></td>
+    <td>${repName(x.rep_id)}</td><td>${x.exp_date||""}</td><td>${x.desc||""}</td>
+    <td>${x.cat||""}</td><td>${fmt(x.amt)}</td>
+    <td><button type="button" class="g" data-one-e="${x.id}">اعتماد</button></td>
+  </tr>`).join("")||'<tr><td colspan="7">لا مصروفات معلّقة</td></tr>';
+  document.querySelectorAll("[data-one-e]").forEach(b=>b.onclick=()=>approveExps([b.dataset.oneE]));
+
+  visitBody.innerHTML=visits.map(x=>`<tr>
+    <td>${new Date(x.visited_at).toLocaleString("ar-EG")}</td>
+    <td>${repName(x.rep_id)}</td>
+    <td>${x.customer_name||"—"}</td>
+    <td>${x.notes||""}</td>
+    <td>${x.lat?`<a class="map-link" target="_blank" href="https://maps.google.com/?q=${x.lat},${x.lng}">خريطة</a>`:"—"}</td>
+  </tr>`).join("")||'<tr><td colspan="5">لا زيارات</td></tr>';
+
+  document.querySelectorAll("[data-one-s]").forEach(b=>b.onclick=()=>approveSales([b.dataset.oneS]));
+  document.querySelectorAll("[data-one-c]").forEach(b=>b.onclick=()=>approveCols([b.dataset.oneC]));
+  document.querySelectorAll("[data-edit-s]").forEach(b=>b.onclick=()=>openEditSale(b.dataset.editS));
+  document.querySelectorAll("[data-edit-c]").forEach(b=>b.onclick=()=>openEditCol(b.dataset.editC));
+}
+
+function openEditSale(id){
+  const x=pendingSales.find(s=>s.id===id); if(!x) return;
+  es_id.value=x.id; es_date.value=x.sale_date; es_cust.value=x.customer_name;
+  es_item.value=x.item_name; es_qty.value=x.qty; es_price.value=x.price;
+  es_disc.value=x.disc; es_pay.value=x.pay||"آجل"; es_note.value=x.review_note||x.note||"";
+  modalEditSale.classList.add("open");
+}
+function openEditCol(id){
+  const x=pendingCols.find(s=>s.id===id); if(!x) return;
+  ec_id.value=x.id; ec_date.value=x.col_date; ec_cust.value=x.customer_name;
+  ec_amt.value=x.amt; ec_method.value=x.method||"كاش"; ec_note.value=x.review_note||x.note||"";
+  modalEditCol.classList.add("open");
+}
+
+async function saveEditSale(andApprove){
+  const id=es_id.value;
+  const x=pendingSales.find(s=>s.id===id); if(!x) return;
+  const patch={
+    sale_date:es_date.value, customer_name:es_cust.value, item_name:es_item.value,
+    qty:num(es_qty.value), price:num(es_price.value), disc:num(es_disc.value),
+    pay:es_pay.value, review_note:es_note.value, edited_by_admin:true
+  };
+  await sb.from("rep_sales_draft").update(patch).eq("id",id);
+  await notifyRep(x.rep_id, "تعديل على مسودة بيع",
+    `تم تعديل بيع ${es_cust.value} / ${es_item.value} بواسطة الإدارة`+(es_note.value?" · "+es_note.value:""),
+    "edited", "sale", id);
+  modalEditSale.classList.remove("open");
+  if(andApprove) await approveSales([id]);
+  else await refresh();
+}
+
+async function saveEditCol(andApprove){
+  const id=ec_id.value;
+  const x=pendingCols.find(s=>s.id===id); if(!x) return;
+  const patch={
+    col_date:ec_date.value, customer_name:ec_cust.value,
+    amt:num(ec_amt.value), method:ec_method.value,
+    review_note:ec_note.value, edited_by_admin:true
+  };
+  await sb.from("rep_collections_draft").update(patch).eq("id",id);
+  await notifyRep(x.rep_id, "تعديل على مسودة تحصيل",
+    `تم تعديل تحصيل ${ec_cust.value} · ${ec_amt.value}`+(ec_note.value?" · "+ec_note.value:""),
+    "edited", "collection", id);
+  modalEditCol.classList.remove("open");
+  if(andApprove) await approveCols([id]);
+  else await refresh();
+}
+
+
+async function approveExps(ids){
+  if(!ids.length) return alert("حدد عناصر");
+  const co=company.value;
+  try{
+    const db=await getDB(co);
+    if(!Array.isArray(db.expenses)) db.expenses=[];
+    const {data:fresh}=await sb.from("rep_expenses_draft").select("*").in("id", ids);
+    const rows=fresh||[];
+    for(const x of rows){
+      db.expenses.push({
+        id:uid(), date:x.exp_date||new Date().toISOString().slice(0,10),
+        desc:(x.desc||"")+" · مندوب: "+repName(x.rep_id),
+        cat:x.cat||"أخرى", amt:num(x.amt), note:x.note||""
+      });
+      await sb.from("rep_expenses_draft").update({status:"approved", reviewed_at:new Date().toISOString()}).eq("id",x.id);
+      await notifyRep(x.rep_id, "تم اعتماد مصروف",
+        `اعتمدت الإدارة: ${x.desc||""} · ${x.amt}`, "approved", "expense", x.id);
+    }
+    await saveCloudDB(co, db);
+    msg.className="msg ok"; msg.textContent="تم اعتماد "+rows.length+" مصروف وترحيلها للنظام";
+    await refresh();
+  }catch(e){ msg.className="msg err"; msg.textContent=e.message||String(e); }
+}
+async function rejectExps(ids){
+  for(const id of ids){
+    const x=pendingExps.find(s=>s.id===id);
+    await sb.from("rep_expenses_draft").update({status:"rejected", reviewed_at:new Date().toISOString()}).eq("id",id);
+    if(x) await notifyRep(x.rep_id, "رفض مسودة مصروف", `رُفض: ${x.desc||""} · ${x.amt}`, "rejected", "expense", id);
+  }
+  await refresh();
+}
+
+
+async function fillRepSelects(){
+  const opts='<option value="">— الكل —</option>'+allReps.map(p=>`<option value="${p.user_id}">${p.name}</option>`).join("");
+  if($("movRep")) movRep.innerHTML=opts;
+  if($("saleRepFilter")) saleRepFilter.innerHTML=opts;
+}
+function $(id){return document.getElementById(id)}
+
+async function renderMovements(){
+  const co=company.value;
+  const rid=movRep.value;
+  const from=movFrom.value, to=movTo.value;
+  // visits + locations history: we have visits with lat/lng; locations is last only
+  let q=sb.from("rep_visits").select("*").eq("company",co).order("visited_at",{ascending:false}).limit(500);
+  const {data:vis}=await q;
+  let rows=(vis||[]).filter(v=>{
+    if(rid && v.rep_id!==rid) return false;
+    const d=String(v.visited_at||"").slice(0,10);
+    if(from && d<from) return false;
+    if(to && d>to) return false;
+    return true;
+  });
+  // also last known locations
+  const {data:locs}=await sb.from("rep_locations").select("*").eq("company",co);
+  const live=(locs||[]).filter(l=>!rid || l.rep_id===rid).map(l=>({
+    visited_at:l.updated_at, rep_id:l.rep_id, customer_name:"— موقع حي —", notes:"آخر موقع معروف",
+    lat:l.lat, lng:l.lng, _live:true
+  }));
+  // merge live at top if in range loosely
+  const all=[...live, ...rows];
+  movBody.innerHTML=all.map(x=>`<tr>
+    <td>${x.visited_at?new Date(x.visited_at).toLocaleString("ar-EG"):"—"}</td>
+    <td>${repName(x.rep_id)}</td>
+    <td>${x._live?"موقع حي":"زيارة"}</td>
+    <td>${x.customer_name||""}${x.notes?" · "+x.notes:""}</td>
+    <td>${x.lat?`<a class="map-link" target="_blank" href="https://maps.google.com/?q=${x.lat},${x.lng}">خريطة</a>`:"—"}</td>
+  </tr>`).join("")||'<tr><td colspan="5">لا تحركات في الفترة</td></tr>';
+}
+
+async function renderRepSales(){
+  const co=company.value;
+  const rid=saleRepFilter.value;
+  const from=saleRepFrom.value, to=saleRepTo.value;
+  const {data:sales}=await sb.from("rep_sales_draft").select("*").eq("company",co);
+  const map={};
+  function ens(id){
+    if(!map[id]) map[id]={name:repName(id), n:0, ok:0, pend:0, rej:0, val:0};
+    return map[id];
+  }
+  (sales||[]).forEach(x=>{
+    if(rid && x.rep_id!==rid) return;
+    const d=String(x.sale_date||x.created_at||"").slice(0,10);
+    if(from && d<from) return;
+    if(to && d>to) return;
+    const m=ens(x.rep_id);
+    m.n++;
+    const val=lineTotal(x.qty,x.price,x.disc,x.discAmt);
+    if(x.status==="approved"){ m.ok++; m.val+=val; }
+    else if(x.status==="pending") m.pend++;
+    else if(x.status==="rejected") m.rej++;
+  });
+  // ensure all reps for company appear
+  allReps.filter(p=>{
+    const cos=Array.isArray(p.companies)?p.companies:(p.company?[p.company]:[]);
+    return !cos.length || cos.includes(co);
+  }).forEach(p=>{ if(!rid || p.user_id===rid) ens(p.user_id); });
+
+  const list=Object.entries(map).map(([id,m])=>({id,...m})).sort((a,b)=>b.val-a.val);
+  const totVal=list.reduce((a,x)=>a+x.val,0);
+  saleRepKpis.innerHTML=`<span class="kpi">إجمالي المبيعات المعتمدة <b>${fmt(totVal)}</b></span>
+    <span class="kpi">عدد المندوبين <b>${list.length}</b></span>`;
+  saleRepBody.innerHTML=list.map(m=>`<tr>
+    <td><b>${m.name}</b></td><td>${m.n}</td><td class="st-approved">${fmt(m.val)}</td>
+    <td class="st-pending">${m.pend}</td><td class="st-rejected">${m.rej}</td>
+  </tr>`).join("")||'<tr><td colspan="5">لا بيانات</td></tr>';
+}
+
+async function approveSales(ids){
+  if(!ids.length) return alert("حدد عناصر");
+  try{
+    const {data:probe}=await sb.from("rep_sales_draft").select("*").in("id", ids);
+    const co=(company.value && company.value!=="__all__") ? company.value : ((probe&&probe[0]&&probe[0].company)||"");
+    if(!co) return alert("اختر شركة");
+    const db=await getDB(co);
+    const {data:fresh}=await sb.from("rep_sales_draft").select("*").in("id", ids);
+    const rows=fresh||[];
+    const blocked=[];
+    const allowed=[];
+    for(const x of rows){
+      const item=findItem(db, x.item_code, x.item_name);
+      const bal=balOfItem(db, item.id);
+      // احسب ما سيُخصم من نفس الاعتماد الحالي لنفس الصنف
+      const already = allowed.filter(a=>a._itemId===item.id).reduce((s,a)=>s+num(a.qty),0);
+      const need=num(x.qty);
+      if(bal - already + 1e-9 < need){
+        blocked.push({name:x.item_name||item.name, need, bal:bal-already, id:x.id});
+      } else {
+        x._itemId=item.id; allowed.push(x);
+      }
+    }
+    if(blocked.length && !allowed.length){
+      msg.className="msg err";
+      msg.textContent="رصيد غير كافٍ: "+blocked.map(b=>`${b.name} (مطلوب ${fmt(b.need)} · متاح ${fmt(b.bal)})`).join(" · ");
+      return;
+    }
+    if(blocked.length){
+      const go=confirm("بعض الأصناف رصيدها غير كافٍ وسيتم تخطيها:\n"+blocked.map(b=>`• ${b.name}: مطلوب ${fmt(b.need)} / متاح ${fmt(b.bal)}`).join("\n")+"\n\nاعتماد الباقي؟");
+      if(!go) return;
+    }
+    for(const x of allowed){
+      // منع التكرار: أعد التحقق من الحالة
+      try{
+        const {data:fresh}=await sb.from("rep_sales_draft").select("id,status").eq("id",x.id).maybeSingle();
+        if(fresh && fresh.status && fresh.status!=="pending"){ console.warn("skip already", x.id, fresh.status); continue; }
+      }catch(e){}
+      // علّم معتمد أولاً قبل إضافة للحسابات
+      try{
+        const {error:stErr}=await sb.from("rep_sales_draft").update({status:"approved", reviewed_at:new Date().toISOString()}).eq("id",x.id).eq("status","pending");
+        if(stErr) console.warn(stErr);
+      }catch(e){}
+      const cust=findCustomer(db, x.customer_id, x.customer_name);
+      const item=findItem(db, x.item_code, x.item_name);
+      const inv=db.nextSaleInv||10001;
+      db.sales.push({
+        id:uid(), date:x.sale_date, inv, customerId:cust.id, itemId:item.id,
+        qty:num(x.qty), price:num(x.price), disc:num(x.disc), discAmt:num(x.discAmt||x.disc_amt||0),
+        pay:x.pay||"آجل", type:x.sale_type||"جملة", rep:repName(x.rep_id), note:x.note||"",
+        fromRep:true, source:"rep"
+      });
+      db.nextSaleInv=inv+1;
+      // مبيعات المندوب تخصم من رصيد السيارة فقط (وليس من المخزن مرة أخرى)
+      try{
+        let {data:vs}=await sb.from("rep_vehicle_stock").select("*").eq("rep_id",x.rep_id).eq("company",co).eq("item_id",item.id).maybeSingle();
+        if(!vs){
+          // جرّب بدون تطابق صارم للشركة
+          const r2=await sb.from("rep_vehicle_stock").select("*").eq("rep_id",x.rep_id).eq("item_id",item.id).limit(1);
+          vs=(r2.data&&r2.data[0])||null;
+        }
+        if(vs){
+          const take=Math.min(num(vs.qty), num(x.qty));
+          const left=Math.max(0, num(vs.qty)-take);
+          await sb.from("rep_vehicle_stock").update({qty:left, updated_at:new Date().toISOString()}).eq("id",vs.id);
+        } else {
+          // أنشئ سجل سالب/صفر ثم حدّث — أو أدرج بكمية سالبة منطقية: نبدأ من 0 - qty
+          console.warn("لا رصيد سيارة للصنف قبل البيع", item.name, x.qty);
+        }
+      }catch(e){ console.warn("vehicle deduct",e); }
+      await notifyRep(x.rep_id, "تم اعتماد بيع",
+        `اعتمدت الإدارة: ${x.customer_name} · ${x.item_name} × ${num(x.qty)<0?("تفريغ "+fmt(Math.abs(num(x.qty)))):fmt(x.qty)}`,
+        "approved", "sale", x.id);
+    }
+    await saveCloudDB(co, db);
+    msg.className="msg ok";
+    msg.textContent="تم اعتماد "+allowed.length+(blocked.length?" · تخطي "+blocked.length+" لنقص الرصيد":"");
+    await refresh();
+  }catch(e){ msg.className="msg err"; msg.textContent=e.message||String(e); }
+}
+
+async function rejectSales(ids){
+  for(const id of ids){
+    const x=pendingSales.find(s=>s.id===id);
+    await sb.from("rep_sales_draft").update({status:"rejected", reviewed_at:new Date().toISOString()}).eq("id",id);
+    if(x) await notifyRep(x.rep_id, "رفض مسودة بيع", `رُفضت: ${x.customer_name} · ${x.item_name}`, "rejected", "sale", id);
+  }
+  await refresh();
+}
+
+async function approveCols(ids){
+  if(!ids.length) return alert("حدد عناصر");
+  const co=company.value;
+  try{
+    const db=await getDB(co);
+    const {data:fresh}=await sb.from("rep_collections_draft").select("*").in("id", ids);
+    const rows=fresh||[];
+    for(const x of rows){
+      if(x.status && x.status!=="pending") continue;
+      try{
+        const {error:stErr}=await sb.from("rep_collections_draft").update({status:"approved", reviewed_at:new Date().toISOString()}).eq("id",x.id).eq("status","pending");
+        if(stErr){ console.warn(stErr); continue; }
+      }catch(e){ continue; }
+      const cust=findCustomer(db, x.customer_id, x.customer_name);
+      db.collections.push({
+        id:uid(), date:x.col_date, customerId:cust.id, amt:num(x.amt),
+        method:x.method||"كاش", note:(x.note||"")+" · مندوب: "+repName(x.rep_id)
+      });
+      await notifyRep(x.rep_id, "تم اعتماد تحصيل",
+        `اعتمدت الإدارة تحصيل ${x.customer_name} · ${x.amt}`, "approved", "collection", x.id);
+    }
+    await saveCloudDB(co, db);
+    msg.className="msg ok"; msg.textContent="تم اعتماد "+rows.length+" تحصيل";
+    await refresh();
+  }catch(e){ msg.className="msg err"; msg.textContent=e.message||String(e); }
+}
+
+async function rejectCols(ids){
+  for(const id of ids){
+    const x=pendingCols.find(s=>s.id===id);
+    await sb.from("rep_collections_draft").update({status:"rejected", reviewed_at:new Date().toISOString()}).eq("id",id);
+    if(x) await notifyRep(x.rep_id, "رفض مسودة تحصيل", `رُفض: ${x.customer_name} · ${x.amt}`, "rejected", "collection", id);
+  }
+  await refresh();
+}
+
+// Create rep via signUp
+btnNewRep.onclick=()=>{ nr_msg.textContent=""; modalRep.classList.add("open"); };
+const nrAll=document.getElementById("nr_allCos");
+if(nrAll) nrAll.onclick=()=>{ document.querySelectorAll("#nr_cos input").forEach(c=>c.checked=true); };
+nr_cancel.onclick=()=>modalRep.classList.remove("open");
+nr_save.onclick=async()=>{
+  nr_msg.className="msg"; nr_msg.textContent="جاري الإنشاء...";
+  try{
+    if(!user) await ensureLogin();
+    const name=nr_name.value.trim();
+    const email=nr_email.value.trim();
+    const pass=nr_pass.value;
+    const job=(document.getElementById("nr_job")||{}).value||"مندوب";
+    const cos=[...document.querySelectorAll("#nr_cos input:checked")].map(x=>x.value);
+    if(!name||!email||!pass||pass.length<6||!cos.length) throw new Error("أكمل الاسم والبريد وكلمة المرور (6+) وشركة واحدة على الأقل");
+    // signUp may switch session — restore admin after
+    const adminSession = (await sb.auth.getSession()).data.session;
+    const {data,error}=await sb.auth.signUp({email, password:pass});
+    if(error) throw error;
+    const newId = data.user && data.user.id;
+    if(!newId) throw new Error("لم يُرجع النظام معرّف المستخدم — تحقق من إعدادات Auth (فعّل sign-ups ويفضّل تعطيل Confirm email)");
+    // restore admin session if changed
+    if(adminSession) await sb.auth.setSession({access_token:adminSession.access_token, refresh_token:adminSession.refresh_token});
+    // صف واحد: user_id + companies[] + job_title
+    const profileRow = {
+      user_id:newId, name, username:email, companies:cos,
+      phone:nr_phone.value.trim(), active:true, job_title:job
+    };
+    // دعم الهيكل القديم (company مفرد) إن لزم
+    if(cos.length===1) profileRow.company = cos[0];
+    const {error:e2}=await sb.from("rep_profiles").upsert(profileRow, {onConflict:"user_id"});
+    if(e2){
+      const {error:e3}=await sb.from("rep_profiles").insert(profileRow);
+      if(e3) throw e3;
+    }
+    nr_msg.className="msg ok"; nr_msg.textContent="تم إنشاء المندوب وربطه بالشركات";
+    setTimeout(()=>{ modalRep.classList.remove("open"); refresh(); }, 800);
+  }catch(e){
+    nr_msg.className="msg err";
+    nr_msg.textContent=(e.message||String(e))+" — إن فشل التسجيل: أنشئ المستخدم من Authentication يدويًا ثم أدخل الـ UID هنا.";
+  }
+};
+
+es_save.onclick=()=>saveEditSale(false);
+es_approve.onclick=()=>saveEditSale(true);
+es_cancel.onclick=()=>modalEditSale.classList.remove("open");
+ec_save.onclick=()=>saveEditCol(false);
+ec_approve.onclick=()=>saveEditCol(true);
+ec_cancel.onclick=()=>modalEditCol.classList.remove("open");
+
+btnLoad.onclick=refresh;
+try{
+  if(window.AY_IO) setTimeout(function(){
+    AY_IO.injectToolbar({
+      fileName: "ادارة_مندوبين",
+      pdfName: "ادارة_مندوبين",
+      getData: function(){ return {pendingSales: pendingSales, pendingCols: pendingCols, pendingExps: pendingExps, at: new Date().toISOString()}; }
+    });
+  }, 800);
+}catch(e){}
+
+btnLogin.onclick=async()=>{ user=null; await ensureLogin(); await refresh(); };
+btnApproveExp.onclick=async()=>{
+  if(window.__approveExpBusy) return;
+  const ids=[...document.querySelectorAll("[data-eid]:checked")].map(x=>x.dataset.eid);
+  if(!ids.length) return alert("حدد عناصر");
+  window.__approveExpBusy=true;
+  const btn=document.getElementById("btnApproveExp");
+  if(btn){ btn.disabled=true; btn.textContent="جاري الاعتماد..."; }
+  try{ await approveExps(ids); }
+  finally{ window.__approveExpBusy=false; if(btn){ btn.disabled=false; btn.textContent="اعتماد المحدد → مصروفات النظام"; } }
+};
+(function bindVLoadBtns(){
+  const ba=document.getElementById("btnApproveVLoad");
+  const br=document.getElementById("btnRejectVLoad");
+  const rb=document.getElementById("btnRebuildVStock");
+  if(rb) rb.onclick=async()=>{
+    const co=(document.getElementById("company")||{}).value;
+    if(!co||co==="__all__"){ alert("اختر شركة"); return; }
+    rb.disabled=true; try{ await rebuildVehicleStockFromSales(co); } finally { rb.disabled=false; }
+  };
+  if(ba) ba.onclick=async ()=>{
+    const ids=[...document.querySelectorAll("#vloadBody [data-vid]:checked")].map(x=>x.dataset.vid);
+    if(!ids.length){ alert("حدّد طلباً واحداً على الأقل"); return; }
+    ba.disabled=true; ba.textContent="جاري الاعتماد...";
+    try{ await approveVLoads(ids); } finally { ba.disabled=false; ba.textContent="اعتماد المحدد → خصم مخزن + رصيد سيارة"; }
+  };
+  if(br) br.onclick=async ()=>{
+    const ids=[...document.querySelectorAll("#vloadBody [data-vid]:checked")].map(x=>x.dataset.vid);
+    if(!ids.length){ alert("حدّد طلباً واحداً على الأقل"); return; }
+    await rejectVLoads(ids);
+  };
+})();
+btnRejectExp.onclick=()=>rejectExps([...document.querySelectorAll("[data-eid]:checked")].map(x=>x.dataset.eid));
+btnApproveSales.onclick=async()=>{
+  if(window.__approveSalesBusy) return;
+  const ids=[...document.querySelectorAll("[data-sid]:checked")].map(x=>x.dataset.sid);
+  if(!ids.length) return alert("حدد عناصر");
+  window.__approveSalesBusy=true;
+  const btn=document.getElementById("btnApproveSales");
+  if(btn){ btn.disabled=true; btn.textContent="جاري الاعتماد..."; }
+  try{ await approveSales(ids); }
+  finally{ window.__approveSalesBusy=false; if(btn){ btn.disabled=false; btn.textContent="اعتماد المحدد → النظام"; } }
+};
+btnRejectSales.onclick=()=>rejectSales([...document.querySelectorAll("[data-sid]:checked")].map(x=>x.dataset.sid));
+btnApproveCol.onclick=async()=>{
+  if(window.__approveColBusy) return;
+  const ids=[...document.querySelectorAll("[data-cid]:checked")].map(x=>x.dataset.cid);
+  if(!ids.length) return alert("حدد عناصر");
+  window.__approveColBusy=true;
+  const btn=document.getElementById("btnApproveCol");
+  if(btn){ btn.disabled=true; btn.textContent="جاري الاعتماد..."; }
+  try{ await approveCols(ids); }
+  finally{ window.__approveColBusy=false; if(btn){ btn.disabled=false; btn.textContent="اعتماد المحدد → النظام"; } }
+};
+btnRejectCol.onclick=()=>rejectCols([...document.querySelectorAll("[data-cid]:checked")].map(x=>x.dataset.cid));
+if(typeof btnMov!=="undefined"&&btnMov) btnMov.onclick=renderMovements;
+if(typeof btnSaleRep!=="undefined"&&btnSaleRep) btnSaleRep.onclick=renderRepSales;
+company.onchange=refresh;
+
+async function loadOwnerNotes(){
+  const box=document.getElementById("ownerNotesBox");
+  if(!box||!sb) return;
+  try{
+    let notes=[];
+    try{
+      const {data}=await sb.from("owner_notes").select("*").order("created_at",{ascending:false}).limit(40);
+      notes=data||[];
+    }catch(e){}
+    // أيضاً إشعارات owner_note لأي مستخدم (عرض عام للإدارة)
+    try{
+      const {data:ns}=await sb.from("rep_notifications").select("*").eq("kind","owner_note").order("created_at",{ascending:false}).limit(20);
+      (ns||[]).forEach(n=>{
+        notes.push({id:n.id, body:n.body, created_at:n.created_at, to_label:"إشعار", from_email:""});
+      });
+    }catch(e){}
+    // إزالة تكرار بالنص+وقت
+    const seen=new Set();
+    const uniq=[];
+    notes.forEach(n=>{
+      const k=(n.body||"")+"|"+(n.created_at||"");
+      if(seen.has(k)) return; seen.add(k); uniq.push(n);
+    });
+    uniq.sort((a,b)=>String(b.created_at||"").localeCompare(String(a.created_at||"")));
+    box.innerHTML = uniq.slice(0,30).map(n=>`<div style="padding:8px 0;border-bottom:1px solid var(--bd)">
+      <b>${n.to_label||"ملاحظة"}</b>
+      <div class="muted">${n.created_at?new Date(n.created_at).toLocaleString("ar-EG"):""} ${n.from_email?("· "+n.from_email):""}</div>
+      <div>${n.body||""}</div>
+    </div>`).join("") || '<div class="muted">لا ملاحظات</div>';
+  }catch(e){
+    box.innerHTML='<div class="muted">تعذر التحميل — نفّذ owner_notes.sql</div>';
+  }
+}
+
+(function subscribeAdminLive(){
+  try{
+    if(!window.supabase || !sb) return;
+    sb.channel("admin-reps-live")
+      .on("postgres_changes",{event:"INSERT",schema:"public",table:"rep_sales_draft"}, p=>{
+        if(window.AYNotify) AYNotify.both("مسودة بيع جديدة", (p.new&&(p.new.customer_name||""))+" · "+(p.new&&p.new.company||""));
+        refresh();
+      })
+      .on("postgres_changes",{event:"INSERT",schema:"public",table:"rep_collections_draft"}, ()=>{ if(window.AYNotify) AYNotify.both("تحصيل جديد",""); refresh(); })
+      .on("postgres_changes",{event:"INSERT",schema:"public",table:"rep_expenses_draft"}, ()=>{ if(window.AYNotify) AYNotify.both("مصروف جديد",""); refresh(); })
+      .subscribe();
+  }catch(e){}
+})();
+btnPerf.onclick=renderPerf;
+(function(){ const t=new Date(); const a=new Date(t.getFullYear(),t.getMonth(),1);
+  if(perfFrom){ perfFrom.value=a.toISOString().slice(0,10); perfTo.value=t.toISOString().slice(0,10); }
+})();
+
+(async()=>{ try{ initSB(); const {data}=await sb.auth.getSession(); if(data.session){ user=data.session.user; userInfo.textContent=user.email; await refresh(); } }catch(e){} })();
+
+/* ===== طلبات تحميل السيارة ===== */
+async function loadVehicleLoads(co){
+  const body=document.getElementById("vloadBody");
+  if(!body) return;
+  const n = (v)=>{ const x=parseFloat(v); return isNaN(x)?0:x; };
+  const norm=s=>{
+    s=String(s||"").trim();
+    const m={"1":"الراعي","شركة 1":"الراعي","2":"الحموي","شركة 2":"الحموي","3":"زدنا","شركة 3":"زدنا","4":"فوليانا","شركة 4":"فوليانا","5":"بسكو مصر","شركة 5":"بسكو مصر"};
+    return m[s]||s;
+  };
+  const coN=norm(co);
+  let data=[];
+  try{
+    let r=await sb.from("rep_vehicle_load_draft").select("*").eq("status","pending").order("created_at",{ascending:false}).limit(500);
+    if(r.error){
+      r=await sb.from("rep_vehicle_load_draft").select("*").eq("status","pending").limit(500);
+    }
+    data=r.data||[];
+    if(coN){
+      const filtered=data.filter(x=>!x.company || norm(x.company)===coN || String(x.company)===String(co));
+      if(filtered.length) data=filtered;
+    }
+  }catch(e){ console.warn("vload cloud", e); }
+
+  // مرآة محلية — فقط إن السحابة فارغة لهذه الشركة (لتجنب التكرار)
+  if(!data.length){
+    try{
+      const local=JSON.parse(localStorage.getItem("ay_pending_vloads")||"[]");
+      local.forEach(x=>{
+        if(x.status && x.status!=="pending") return;
+        if(coN && x.company && norm(x.company)!==coN && x.company!==co) return;
+        data.push({...x, id:x.id||("local_"+Math.random().toString(36).slice(2,9)), _local:true});
+      });
+    }catch(e){}
+  }
+
+  // إزالة تكرار صارمة: مندوب + صنف + يوم = سطر واحد
+  const keyOf = (x)=>{
+    const item = String(x.item_id||"").trim() || String(x.item_name||"").trim().toLowerCase();
+    const day = String(x.load_date || x.created_at || "").slice(0,10);
+    return [String(x.rep_id||""), item, day, norm(x.company||coN||"")].join("||");
+  };
+  const map=new Map();
+  data.forEach(x=>{
+    const k=keyOf(x);
+    const prev=map.get(k);
+    if(!prev){ map.set(k, x); return; }
+    // فضّل السحابي على المحلي
+    if(prev._local && !x._local){ map.set(k, x); return; }
+    if(!prev._local && x._local) return;
+    // نفس المصدر: احتفظ بالأحدث، واجمع الكمية إن تساوت إعادة الإرسال
+    const tPrev=new Date(prev.created_at||0).getTime()||0;
+    const tNew=new Date(x.created_at||0).getTime()||0;
+    if(tNew>=tPrev){
+      // لا نضاعف الكمية — نأخذ أحدث سجل فقط (التكرار = إعادة إرسال)
+      map.set(k, x);
+    }
+  });
+    data=[...map.values()];
+
+  // تنظيف سحابي صامت للمكررات (خلفية)
+  (async function autoCleanCloudDups(){
+    try{
+      const idsToDrop=[];
+      const seen=new Map();
+      // أعد جلب pending الخام
+      let r=await sb.from("rep_vehicle_load_draft").select("id,rep_id,item_id,item_name,load_date,company,created_at").eq("status","pending").limit(500);
+      let rows=r.data||[];
+      if(coN) rows=rows.filter(x=>!x.company||norm(x.company)===coN);
+      rows.sort((a,b)=>String(b.created_at||"").localeCompare(String(a.created_at||"")));
+      rows.forEach(x=>{
+        const item=String(x.item_id||"").trim()||String(x.item_name||"").trim().toLowerCase();
+        const day=String(x.load_date||x.created_at||"").slice(0,10);
+        const k=[String(x.rep_id||""),item,day,norm(x.company||"")].join("||");
+        if(seen.has(k)) idsToDrop.push(x.id);
+        else seen.set(k, x.id);
+      });
+      for(const id of idsToDrop.slice(0,100)){
+        await sb.from("rep_vehicle_load_draft").delete().eq("id", id);
+      }
+      if(idsToDrop.length) console.info("auto-cleaned vload dups:", idsToDrop.length);
+    }catch(e){}
+  })();
+
+  let rmap={};
+  try{
+    const {data:reps}=await sb.from("rep_profiles").select("user_id,name");
+    (reps||[]).forEach(r=>rmap[r.user_id]=r.name);
+  }catch(e){}
+
+  let box=document.getElementById("vloadSummary");
+  if(!box){
+    const card=body.closest(".card");
+    if(card){
+      box=document.createElement("div");
+      box.id="vloadSummary";
+      box.style.cssText="display:flex;gap:10px;flex-wrap:wrap;margin-bottom:10px;align-items:center";
+      card.insertBefore(box, card.querySelector(".table-wrap")||body.parentNode);
+    }
+  }
+  if(box){
+    box.innerHTML=`<div style="background:rgba(245,158,11,.15);border:1px solid rgba(245,158,11,.4);border-radius:10px;padding:10px 14px;min-width:140px">
+      <div style="font-size:.72rem;color:var(--m)">طلبات تحميل معلّقة (بدون تكرار)</div>
+      <div style="font-size:1.4rem;font-weight:800;color:var(--o)">${data.length}</div>
+      <div style="font-size:.7rem;color:var(--m)">${coN||"كل الشركات"}</div>
+    </div>
+    <button type="button" class="o" id="btnCleanDupVLoad" style="padding:8px 12px;font-size:.75rem">تنظيف التكرار في السحابة</button>`;
+    const btn=document.getElementById("btnCleanDupVLoad");
+    if(btn) btn.onclick=()=>cleanDuplicateVLoads(coN||co);
+  }
+
+  body.innerHTML=(data||[]).map(x=>`<tr>
+    <td><input type="checkbox" data-vid="${x.id}" data-rep="${x.rep_id||""}" data-item="${x.item_id||""}" data-code="${x.item_code||x.barcode||""}" data-barcode="${x.barcode||x.item_code||""}" data-name="${String(x.item_name||"").replace(/"/g,"&quot;")}" data-qty="${num(x.qty)<0?("تفريغ "+fmt(Math.abs(num(x.qty)))):fmt(x.qty)}" data-kind="${num(x.qty)<0?'v2wh':'load'}" data-local="${x._local?1:0}"/></td>
+    <td>${rmap[x.rep_id]||x.rep_name||x.rep_id||"—"}</td>
+    <td>${x.load_date||String(x.created_at||"").slice(0,10)}</td>
+    <td>${x.item_name||""} <small>(${x.item_code||""})</small>${x._local?' <span class="st-pending">محلي</span>':''}</td>
+    <td>${typeof fmt==="function"?fmt(x.qty):n(x.qty)}</td>
+    <td>${x.note||""}${x.company?(" · "+x.company):""}</td>
+  </tr>`).join("")||'<tr><td colspan="6">لا طلبات معلّقة</td></tr>';
+}
+
+/** يحذف من السحابة الصفوف المكررة (نفس مندوب+صنف+يوم) ويُبقي واحداً */
+async function cleanDuplicateVLoads(co){
+  if(!sb) return alert("غير متصل");
+  if(!confirm("سيتم الإبقاء على طلب واحد لكل صنف/مندوب/يوم وحذف الباقي المكرر من السحابة. متابعة؟")) return;
+  const norm=s=>{
+    s=String(s||"").trim();
+    const m={"1":"الراعي","شركة 1":"الراعي","2":"الحموي","شركة 2":"الحموي","3":"زدنا","شركة 3":"زدنا","4":"فوليانا","شركة 4":"فوليانا","5":"بسكو مصر","شركة 5":"بسكو مصر"};
+    return m[s]||s;
+  };
+  const coN=norm(co);
+  let r=await sb.from("rep_vehicle_load_draft").select("id,rep_id,item_id,item_name,load_date,company,created_at,status").eq("status","pending").limit(1000);
+  if(r.error){ alert(r.error.message); return; }
+  let rows=r.data||[];
+  if(coN) rows=rows.filter(x=>!x.company||norm(x.company)===coN);
+  const keyOf=x=>{
+    const item=String(x.item_id||"").trim()||String(x.item_name||"").trim().toLowerCase();
+    const day=String(x.load_date||x.created_at||"").slice(0,10);
+    return [String(x.rep_id||""),item,day,norm(x.company||"")].join("||");
+  };
+  // رتّب الأحدث أولاً — أبقِ الأول واحذف الباقي
+  rows.sort((a,b)=>String(b.created_at||"").localeCompare(String(a.created_at||"")));
+  const keep=new Set();
+  const del=[];
+  rows.forEach(x=>{
+    const k=keyOf(x);
+    if(keep.has(k)) del.push(x.id);
+    else keep.add(k);
+  });
+  let removed=0;
+  for(const id of del){
+    if(String(id).startsWith("local_")) continue;
+    const {error}=await sb.from("rep_vehicle_load_draft").delete().eq("id", id);
+    if(!error) removed++;
+  }
+  try{ localStorage.removeItem("ay_pending_vloads"); }catch(e){}
+  alert("تم حذف "+removed+" سجل مكرر · المتبقي "+keep.size);
+  await loadVehicleLoads(co);
+}
+
+
+/** تحديث رصيد السيارة بشكل موثوق (إدراج أو جمع) */
+async function upsertVehicleStock(repId, co, itemId, itemCode, itemName, deltaQty, barcode){
+  if(!repId || !num(deltaQty)) return {ok:false, error:"بيانات ناقصة (مندوب/كمية)"};
+  deltaQty = num(deltaQty);
+  const bc = String(barcode || itemCode || itemId || "-").trim() || "-";
+  const code = String(itemCode || barcode || "").trim();
+  const name = String(itemName || "").trim();
+  const iid = String(itemId || "").trim();
+
+  // ابحث عن صف موجود: أولاً (rep+barcode) ثم (rep+item_id) ثم (rep+company+item)
+  let primary = null;
+  try{
+    // 1) القيد الفريد الشائع: rep_id + barcode
+    let r = await sb.from("rep_vehicle_stock").select("*").eq("rep_id", repId).eq("barcode", bc).limit(5);
+    if(!r.error && r.data && r.data.length){
+      primary = r.data.find(x=>!co || !x.company || x.company===co) || r.data[0];
+    }
+    // 2) item_id
+    if(!primary && iid){
+      r = await sb.from("rep_vehicle_stock").select("*").eq("rep_id", repId).eq("item_id", iid).limit(10);
+      if(!r.error && r.data && r.data.length){
+        primary = r.data.find(x=>!co || !x.company || x.company===co) || r.data[0];
+      }
+    }
+    // 3) أي صف لنفس المندوب والاسم
+    if(!primary && name){
+      r = await sb.from("rep_vehicle_stock").select("*").eq("rep_id", repId).eq("item_name", name).limit(5);
+      if(!r.error && r.data && r.data.length) primary = r.data[0];
+    }
+  }catch(e){
+    return {ok:false, error:"بحث: "+(e.message||e)};
+  }
+
+  if(primary && primary.id){
+    const newQty = Math.max(0, num(primary.qty) + deltaQty);
+    const payload = {
+      qty: newQty,
+      company: co || primary.company || "",
+      item_id: iid || primary.item_id || "",
+      item_code: code || primary.item_code || "",
+      item_name: name || primary.item_name || "",
+      barcode: bc || primary.barcode || "-",
+      updated_at: new Date().toISOString()
+    };
+    let {error} = await sb.from("rep_vehicle_stock").update(payload).eq("id", primary.id);
+    if(error){
+      // بدون updated_at
+      delete payload.updated_at;
+      const r2 = await sb.from("rep_vehicle_stock").update(payload).eq("id", primary.id);
+      if(r2.error) return {ok:false, error:r2.error.message};
+    }
+    try{
+      const key="ay_vstock_"+co;
+      const m=JSON.parse(localStorage.getItem(key)||"{}");
+      if(iid) m[iid]=newQty;
+      localStorage.setItem(key, JSON.stringify(m));
+    }catch(e){}
+    return {ok:true, qty:newQty, id:primary.id, mode:"update"};
+  }
+
+  // إدراج جديد — عند تعارض القيد الفريد نُحدّث
+  const insBase = {
+    rep_id: repId,
+    company: co || "",
+    item_id: iid,
+    item_code: code,
+    item_name: name,
+    barcode: bc,
+    qty: deltaQty
+  };
+  const attempts = [
+    {...insBase, updated_at: new Date().toISOString()},
+    {...insBase}
+  ];
+  let lastErr = "";
+  for(const ins of attempts){
+    const {data, error} = await sb.from("rep_vehicle_stock").insert(ins).select("id,qty").maybeSingle();
+    if(!error){
+      try{
+        const key="ay_vstock_"+co;
+        const m=JSON.parse(localStorage.getItem(key)||"{}");
+        if(iid) m[iid]=num(m[iid]||0)+deltaQty;
+        localStorage.setItem(key, JSON.stringify(m));
+      }catch(e){}
+      return {ok:true, qty:data&&data.qty, id:data&&data.id, mode:"insert"};
+    }
+    lastErr = error.message || String(error);
+    // تعارض فريد → ابحث بالباركود وحدّث
+    if(/duplicate|unique|23505/i.test(lastErr)){
+      try{
+        let r = await sb.from("rep_vehicle_stock").select("*").eq("rep_id", repId).eq("barcode", bc).limit(1);
+        if((!r.data||!r.data.length) && iid){
+          r = await sb.from("rep_vehicle_stock").select("*").eq("rep_id", repId).eq("item_id", iid).limit(1);
+        }
+        if(r.data && r.data[0]){
+          const row = r.data[0];
+          const newQty = num(row.qty) + deltaQty;
+          const up = await sb.from("rep_vehicle_stock").update({
+            qty: newQty,
+            company: co || row.company || "",
+            item_id: iid || row.item_id || "",
+            item_code: code || row.item_code || "",
+            item_name: name || row.item_name || "",
+            barcode: bc
+          }).eq("id", row.id);
+          if(!up.error){
+            try{
+              const key="ay_vstock_"+co;
+              const m=JSON.parse(localStorage.getItem(key)||"{}");
+              if(iid) m[iid]=newQty;
+              localStorage.setItem(key, JSON.stringify(m));
+            }catch(e){}
+            return {ok:true, qty:newQty, id:row.id, mode:"update-on-conflict"};
+          }
+          lastErr = up.error.message || lastErr;
+        }
+      }catch(e){ lastErr = e.message || lastErr; }
+    }
+  }
+  return {ok:false, error:lastErr||"فشل حفظ رصيد السيارة"};
+}
+
+/** إعادة بناء أرصدة السيارة من حركات VL المعتمدة في بيانات الشركة */
+async function rebuildVehicleStockFromSales(co){
+  const db=await getDB(co);
+  // من vehicleLoads + بقايا مبيعات VL القديمة
+  let loads=(db.vehicleLoads||[]).slice();
+  (db.sales||[]).filter(s=>s.source==="vehicle_load" || (s.note||"").indexOf("تحميل سيارة")>=0 || String(s.inv||"").indexOf("VL-")===0)
+    .forEach(s=>loads.push({rep:s.rep, itemId:s.itemId, qty:s.qty, item_name:""}));
+  if(!loads.length){ alert("لا حركات تحميل في بيانات الشركة"); return; }
+  const map={};
+  loads.forEach(s=>{
+    const k=String(s.rep||s.rep_id||"")+"||"+String(s.itemId||s.item_id||"");
+    if(!map[k]) map[k]={repId:s.rep||s.rep_id, itemId:s.itemId||s.item_id, qty:0, name:s.item_name||""};
+    map[k].qty+=num(s.qty);
+  });
+  // اطرح مبيعات المندوب منRep
+  (db.sales||[]).filter(s=>s.fromRep||s.source==="rep").forEach(s=>{
+    const k=String(s.rep||"")+"||"+String(s.itemId||"");
+    if(map[k]) map[k].qty=Math.max(0, map[k].qty-num(s.qty));
+  });
+  let ok=0, fail=0;
+  for(const v of Object.values(map)){
+    if(!v.repId||!v.itemId) continue;
+    const it=(db.items||[]).find(i=>i.id===v.itemId);
+    // اضبط الكمية المطلقة: اقرأ الحالي ثم set
+    try{
+      const {data:rows}=await sb.from("rep_vehicle_stock").select("*").eq("rep_id",v.repId).eq("item_id",v.itemId);
+      const list=(rows||[]).filter(x=>!co||!x.company||x.company===co);
+      if(list.length){
+        await sb.from("rep_vehicle_stock").update({qty:v.qty, company:co, item_name:(it&&it.name)||"", item_code:(it&&it.code)||"", barcode:String((it&&(it.barcode||it.code))||v.itemId||"-"), updated_at:new Date().toISOString()}).eq("id", list[0].id);
+        for(const e of list.slice(1)) await sb.from("rep_vehicle_stock").delete().eq("id", e.id);
+      } else {
+        await sb.from("rep_vehicle_stock").insert({rep_id:v.repId, company:co, item_id:v.itemId, item_name:(it&&it.name)||"", item_code:(it&&it.code)||"", barcode:String((it&&(it.barcode||it.code))||v.itemId||"-"), qty:v.qty});
+      }
+      ok++;
+    }catch(e){ fail++; console.warn(e); }
+  }
+  alert("إعادة بناء رصيد السيارة: "+ok+" صنف"+(fail?" · فشل "+fail:""));
+}
+
+
+async function approveVLoads(ids){
+  const msgEl = document.getElementById("msg");
+  try{
+    if(!ids || !ids.length){ alert("اختر طلبات"); return; }
+    const coEl = document.getElementById("company");
+    let co = coEl ? coEl.value : "";
+    if(!co || co==="__all__"){ alert("اختر شركة محددة من القائمة العلوية ثم أعد الاعتماد"); return; }
+    if(msgEl){ msgEl.className="msg"; msgEl.textContent="جاري الاعتماد وحفظ المخزن/السيارة..."; }
+    let db = await getDB(co);
+    if(!(db.items||[]).length){
+      alert("بيانات أصناف الشركة فارغة في السحابة/المحلي. اضغط «☁ مزامنة بيانات الشركات» أولاً ثم أعد الاعتماد.");
+      return;
+    }
+    let ok=0, skipped=0, errors=[], vErrs=[];
+    for(const id of ids){
+      try{
+        const cb=document.querySelector("#vloadBody [data-vid=\""+CSS.escape(String(id))+"\"]")
+          || document.querySelector("[data-vid=\""+id+"\"]");
+        if(!cb){ skipped++; continue; }
+        const repId=cb.dataset.rep||"";
+        let itemId=cb.dataset.item||"";
+        const itemCode=cb.dataset.code||"";
+        const itemName=cb.dataset.name||"";
+        const qtyRaw=num(cb.dataset.qty);
+        if(!qtyRaw){ skipped++; continue; }
+        const isReturnToWh = qtyRaw < 0; // تفريغ سيارة → مخزن
+        const qty = Math.abs(qtyRaw);
+        if(!itemId && itemName){
+          const found=(db.items||[]).find(it=>String(it.name||"").trim()===String(itemName).trim()
+            || String(it.code||"")===String(itemCode)
+            || String(it.barcode||"")===String(itemCode));
+          if(found) itemId=found.id;
+        }
+        if(!itemId){
+          errors.push((itemName||id)+": صنف غير موجود في بيانات «"+co+"»");
+          skipped++; continue;
+        }
+        if(!isReturnToWh){
+          const bal=balOfItem(db, itemId);
+          if(qty>bal+0.001){
+            errors.push((itemName||"")+": المطلوب "+fmt(qty)+" أكبر من رصيد المخزن "+fmt(bal));
+            skipped++; continue;
+          }
+        }
+        // حركة: تحميل (+) أو تفريغ للمخزن (-)
+        const moveId=uid();
+        db.vehicleLoads = db.vehicleLoads || [];
+        db.vehicleLoads.push({
+          id:moveId,
+          date:new Date().toISOString().slice(0,10),
+          itemId:itemId, item_code:itemCode, item_name:itemName,
+          qty: isReturnToWh ? -qty : qty,
+          rep:repId, company:co,
+          note: isReturnToWh ? "تفريغ سيارة → مخزن" : "تحميل سيارة مندوب",
+          draft_id:id, type: isReturnToWh ? "vehicle_to_warehouse" : "vehicle_load"
+        });
+        // تنظيف بقايا قديمة: لا تُنشأ مبيعات/عميل سيارة توزيع
+        db.customers = (db.customers||[]).filter(c=>c.code!=="VEHICLE" && c.name!=="سيارة توزيع");
+        // إضافة رصيد السيارة (إلزامي لنجاح الاعتماد)
+        const itemRow=(db.items||[]).find(i=>i.id===itemId);
+        const bcVal=(itemRow&&(itemRow.barcode||(itemRow.barcodes&&itemRow.barcodes[0])))||itemCode||cb.dataset.code||itemId;
+        const vsRes=await upsertVehicleStock(repId, co, itemId, itemCode|| (itemRow&&itemRow.code)||"", itemName||(itemRow&&itemRow.name)||"", isReturnToWh ? -qty : qty, bcVal);
+        if(!vsRes.ok){
+          vErrs.push((itemName||"")+": "+(vsRes.error||"فشل رصيد السيارة"));
+          // لا نعتبر الاعتماد كاملاً إن فشل رصيد السيارة — تراجع حركة المخزن
+          db.vehicleLoads = (db.vehicleLoads||[]).filter(s=>s.id!==moveId);
+          skipped++; continue;
+        }
+        // مرآة داخل بيانات الشركة
+        db.vehicleStock = db.vehicleStock || {};
+        const vk = String(repId)+"|"+String(itemId);
+        const prevQ = (db.vehicleStock[vk] && typeof db.vehicleStock[vk]==="object")
+          ? num(db.vehicleStock[vk].qty) : num(db.vehicleStock[vk]||0);
+        db.vehicleStock[vk]={rep_id:repId, item_id:itemId, qty:prevQ+qty, item_name:itemName, company:co};
+
+        // اعتماد المسودة
+        if(String(id).startsWith("local_")){
+          try{
+            let arr=JSON.parse(localStorage.getItem("ay_pending_vloads")||"[]");
+            arr=arr.filter(x=>x.id!==id);
+            localStorage.setItem("ay_pending_vloads", JSON.stringify(arr));
+          }catch(e){}
+        } else {
+          const {error:uerr}=await sb.from("rep_vehicle_load_draft")
+            .update({status:"approved", reviewed_at:new Date().toISOString()})
+            .eq("id", id);
+          if(uerr) errors.push("تحديث حالة الطلب: "+(uerr.message||uerr));
+          // أغلق مكررات نفس الصنف
+          try{
+            await sb.from("rep_vehicle_load_draft").update({status:"approved", reviewed_at:new Date().toISOString(), review_note:"dedup"})
+              .eq("status","pending").eq("rep_id",repId).eq("item_id",itemId).eq("company",co);
+          }catch(e){}
+        }
+        if(repId) try{ await notifyRep(repId, isReturnToWh ? "تم اعتماد ارتجاع للسيارة→المخزن" : "تم اعتماد تحميل السيارة", (itemName||"")+" × "+fmt(qty)+" · "+co, "success", "vehicle_load", id); }catch(e){}
+        ok++;
+      }catch(e){ errors.push(String(e.message||e)); skipped++; }
+    }
+    // حفظ بيانات الشركة في السحابة (حتى تظهر في نظام الإدارة)
+    try{
+      db = await saveCloudDB(co, db);
+    }catch(e){
+      errors.push("حفظ الشركة: "+(e.message||e));
+      throw e;
+    }
+    const text="اعتماد تحميل: "+ok+" ✓"+(skipped?" · تخطي "+skipped:"")
+      +(vErrs.length?" · تحذير سيارة: "+vErrs.slice(0,2).join("; "):"")
+      +(errors.length?" · "+errors.slice(0,2).join(" | "):"");
+    if(msgEl){ msgEl.className=ok?"msg ok":"msg err"; msgEl.textContent=text; }
+    alert(text+"\n\nافتح حسابات الشركة وحدّث الصفحة لرؤية حركة المخزن.");
+    await refresh();
+  }catch(e){
+    console.error(e);
+    if(msgEl){ msgEl.className="msg err"; msgEl.textContent=e.message||String(e); }
+    alert("فشل الاعتماد: "+(e.message||e));
+  }
+}
+
+async function rejectVLoads(ids){
+  try{
+    if(!ids.length){alert("اختر طلبات");return;}
+    const note=prompt("سبب الرفض (اختياري):")||"";
+    let n=0;
+    for(const id of ids){
+      const cb=document.querySelector(`[data-vid="${id}"]`);
+      const repId=cb?cb.dataset.rep:null;
+      if(String(id).startsWith("local_")){
+        try{
+          let arr=JSON.parse(localStorage.getItem("ay_pending_vloads")||"[]");
+          arr=arr.filter(x=>x.id!==id);
+          localStorage.setItem("ay_pending_vloads", JSON.stringify(arr));
+        }catch(e){}
+      } else {
+        await sb.from("rep_vehicle_load_draft").update({status:"rejected", reviewed_at:new Date().toISOString(), review_note:note}).eq("id",id);
+      }
+      if(repId) try{ await notifyRep(repId, "رُفض طلب تحميل السيارة", note||"", "warn", "vehicle_load", id); }catch(e){}
+      n++;
+    }
+    alert("تم رفض "+n+" طلب");
+    await refresh();
+  }catch(e){ alert("فشل الرفض: "+(e.message||e)); }
+}
+
+// hook into refresh
+const _origRefresh = typeof refresh==="function" ? refresh : null;
+
+
+/* مزامنة بيانات الشركات من localStorage إلى company_data */
+async function syncAllCompaniesToCloud(){
+  const cos=[
+    {id:"الراعي", label:"الراعي"},
+    {id:"الحموي", label:"الحموي"},
+    {id:"زدنا", label:"زدنا"},
+    {id:"فوليانا", label:"فوليانا"},
+    {id:"بسكو مصر", label:"بسكو مصر"}
+  ];
+  function score(o){
+    if(!o||typeof o!=="object") return 0;
+    return (o.items||[]).length*2 + (o.customers||[]).length*2 + (o.sales||[]).length
+      + (o.purchases||[]).length + (o.collections||[]).length + (o.payments||[]).length;
+  }
+  const results=[];
+  msg.className="msg"; msg.textContent="جاري مزامنة بيانات كل الشركات...";
+  for(const c of cos){
+    const co=c.id;
+    try{
+      let local=null, localSrc="";
+      // 1) localStorage
+      const keys=["acc_abu_"+co+"_v2","acc_abu_"+co];
+      for(const k of keys){
+        try{
+          const raw=localStorage.getItem(k);
+          if(!raw) continue;
+          const o=JSON.parse(raw);
+          if(score(o)>0){ local=o; localSrc="محلي"; break; }
+        }catch(e){}
+      }
+      if(!local){
+        for(let i=0;i<localStorage.length;i++){
+          const k=localStorage.key(i);
+          if(!k||k.indexOf(co)<0) continue;
+          try{
+            const o=JSON.parse(localStorage.getItem(k)||"null");
+            if(score(o)>0){ local=o; localSrc="محلي("+k+")"; break; }
+          }catch(e){}
+        }
+      }
+      // 2) بذرة مضمّنة
+      if(!local && window.COMPANY_SEEDS && window.COMPANY_SEEDS[co] && score(window.COMPANY_SEEDS[co])>0){
+        local=window.COMPANY_SEEDS[co]; localSrc="بذرة مضمّنة";
+      }
+      // 3) JSON seed
+      if(!local){
+        try{
+          const res=await fetch(encodeURI(co+".json")+"?t="+Date.now(),{cache:"no-store"});
+          if(res.ok){
+            const o=await res.json();
+            if(score(o)>0){ local=o; localSrc="JSON"; }
+          }
+        }catch(e){}
+      }
+      // 3) السحابة الحالية
+      let cloud=null;
+      try{
+        const {data}=await sb.from("company_data").select("data,updated_at").eq("id",co).maybeSingle();
+        if(data&&data.data) cloud=data.data;
+      }catch(e){}
+
+      const sLocal=score(local), sCloud=score(cloud);
+      let final=null, action="";
+
+      if(sLocal>0 && sLocal>=sCloud){
+        // المحلي/JSON أغنى أو مساوٍ → ارفع
+        final=local; action="رُفع من "+localSrc+" (نقاط "+sLocal+(sCloud?" > سحابة "+sCloud:"")+")";
+        await saveCloudDB(co, final);
+        saveLocalDB(co, final);
+      } else if(sCloud>0){
+        // السحابة أغنى → لا تستبدلها، حدّث المحلي فقط
+        final=cloud; action="السحابة أحدث/أغنى (نقاط "+sCloud+") — لم تُستبدل"+(sLocal?" · محلي "+sLocal:"");
+        saveLocalDB(co, final);
+      } else {
+        // الاثنان فارغان
+        final={items:[],customers:[],suppliers:[],sales:[],purchases:[],collections:[],payments:[],expenses:[],checks:[],openCash:0};
+        action="فارغ في المحلي والسحابة";
+        // لا نرفع فارغاً فوق شيء — لكن لا يوجد شيء
+      }
+
+      const nI=(final.items||[]).length, nC=(final.customers||[]).length, nS=(final.sales||[]).length;
+      results.push(c.label+": أصناف "+nI+" · عملاء "+nC+" · مبيعات "+nS+" · "+action);
+    }catch(e){ results.push(c.label+": خطأ "+(e.message||e)); }
+  }
+  msg.className="msg ok";
+  msg.textContent=results.join(" | ");
+  alert("نتيجة مزامنة الشركات الأربع:\n\n"+results.join("\n"));
+}
+const btnSyncCo=document.getElementById("btnSyncCompanies");
+if(btnSyncCo) btnSyncCo.onclick=()=>syncAllCompaniesToCloud();
+
+
+async function loadAiReports(){
+  const box=document.getElementById("aiAdminList");
+  if(!box) return;
+  box.textContent="جاري التحميل...";
+  try{
+    let rows=[];
+    try{
+      const {data,error}=await sb.from("ai_reports").select("*").order("created_at",{ascending:false}).limit(50);
+      if(!error) rows=data||[];
+    }catch(e){}
+    if(!rows.length){
+      // fallback: notifications with ai
+      try{
+        const {data}=await sb.from("rep_notifications").select("*").eq("kind","ai_report").order("created_at",{ascending:false}).limit(30);
+        rows=(data||[]).map(n=>({created_at:n.created_at, rep_name:n.title, body:n.body, kind:"notif"}));
+      }catch(e){}
+    }
+    box.innerHTML=rows.map(r=>`<div style="padding:8px 0;border-bottom:1px solid var(--bd)">
+      <b>${r.rep_name||r.kind||""}</b> · ${r.company||""} · <span class="muted">${r.created_at?String(r.created_at).slice(0,19).replace("T"," "):""}</span>
+      <pre style="white-space:pre-wrap;font-family:inherit;font-size:.75rem;margin:6px 0 0">${(r.body||JSON.stringify(r.payload||{})).slice(0,1200)}</pre>
+    </div>`).join("")||'<div class="muted">لا تقارير بعد — نفّذ schema_ai.sql إن رغبت بجدول مخصص، أو ستظهر عبر الإشعارات</div>';
+  }catch(e){ box.textContent=e.message||String(e); }
+}
+const btnAi=document.getElementById("btnLoadAi");
+if(btnAi) btnAi.onclick=loadAiReports;
+
+</script>
+
+<footer class="ay-footer no-print" style="text-align:center;margin:28px 12px 16px;padding:12px 10px;font-size:.72rem;color:#64748b;border-top:1px solid #e2e8f0;line-height:1.6">
+  تصميم وبرمجة د.م/ ايمن زغلول — ت/ 01063188440
+</footer>
+
+<script>
+(function autoSyncAdmin(){
+  async function run(){
+    try{
+      if(!sb) return;
+      // استخدم AppCloud إن وُجد
+      if(window.AppCloud && AppCloud.configured){
+        if(!AppCloud.client) AppCloud.init();
+        if(!AppCloud.user){
+          const s=await AppCloud.getSession();
+        }
+        if(AppCloud.user && typeof AppCloud.syncAllCompaniesFromLocal==="function"){
+          const res=await AppCloud.syncAllCompaniesFromLocal();
+          console.log("[auto-sync all]", res);
+        }
+      }
+    }catch(e){ console.warn(e); }
+  }
+  setTimeout(run, 5000);
+  setInterval(run, 60000);
+  window.addEventListener("online", function(){ setTimeout(run, 2000); });
+})();
+</script>
+</body>
+</html>
+
+  <div class="card" style="border-color:#3b82f6">
+    <h2>تقارير مجموعة أبو يونس</h2>
+    <button type="button" class="g" id="btnLoadAi">تحميل آخر التقارير</button>
+    <div id="aiAdminList" style="margin-top:10px;font-size:.8rem;max-height:320px;overflow:auto"></div>
+  </div>

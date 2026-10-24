@@ -1,0 +1,262 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width,initial-scale=1"/>
+<title>مجموعة أبو يونس — لوحة ذكية</title>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<script src="config.js"></script>
+<script src="io-tools.js"></script>
+<script src="company_seeds.js"></script>
+<style>
+:root{--bg:#0f172a;--s:#1e293b;--s2:#334155;--t:#f1f5f9;--m:#94a3b8;--p:#3b82f6;--g:#22c55e;--r:#ef4444;--o:#f59e0b;--bd:#334155}
+*{box-sizing:border-box;margin:0;padding:0}
+body{font-family:system-ui,Tahoma,sans-serif;background:var(--bg);color:var(--t);min-height:100vh}
+.top{display:flex;justify-content:space-between;align-items:center;padding:12px 16px;background:var(--s);border-bottom:1px solid var(--bd);position:sticky;top:0;z-index:10}
+.top h1{font-size:1.05rem}
+.top a{color:var(--m);text-decoration:none;font-size:.8rem}
+.wrap{max-width:1100px;margin:0 auto;padding:14px}
+.kpis{display:grid;grid-template-columns:repeat(auto-fit,minmax(140px,1fr));gap:10px;margin-bottom:14px}
+.kpi{background:var(--s);border:1px solid var(--bd);border-radius:12px;padding:12px}
+.kpi .l{font-size:.72rem;color:var(--m)}.kpi .v{font-size:1.15rem;font-weight:800;margin-top:4px}
+.card{background:var(--s);border:1px solid var(--bd);border-radius:14px;padding:14px;margin-bottom:12px}
+.card h2{font-size:.95rem;margin-bottom:10px}
+.alert{padding:10px 12px;border-radius:10px;margin:6px 0;font-size:.82rem;line-height:1.6}
+.alert.warn{background:rgba(245,158,11,.12);border:1px solid rgba(245,158,11,.35);color:#fcd34d}
+.alert.ok{background:rgba(34,197,94,.1);border:1px solid rgba(34,197,94,.3);color:#86efac}
+.alert.bad{background:rgba(239,68,68,.12);border:1px solid rgba(239,68,68,.35);color:#fca5a5}
+.alert.info{background:rgba(59,130,246,.12);border:1px solid rgba(59,130,246,.35);color:#93c5fd}
+table{width:100%;border-collapse:collapse;font-size:.78rem}
+th,td{padding:6px 8px;border-bottom:1px solid var(--bd);text-align:right}
+th{color:var(--m);font-weight:600}
+.btn{background:var(--p);color:#fff;border:0;border-radius:10px;padding:10px 14px;font-weight:700;cursor:pointer}
+.muted{color:var(--m);font-size:.75rem}
+.login{max-width:380px;margin:40px auto;padding:16px}
+input{width:100%;padding:10px;border-radius:10px;border:1px solid var(--bd);background:var(--s2);color:var(--t);margin:6px 0 10px}
+.tabs{display:flex;gap:6px;flex-wrap:wrap;margin-bottom:12px}
+.tabs button{background:var(--s2);border:0;color:var(--m);padding:8px 12px;border-radius:8px;cursor:pointer;font-size:.78rem}
+.tabs button.on{background:var(--p);color:#fff}
+.pane{display:none}.pane.on{display:block}
+.ai-box{background:linear-gradient(135deg,#1e3a5f,#0f172a);border:1px solid #3b82f6;border-radius:14px;padding:14px}
+.ai-box h2{color:#93c5fd}
+</style>
+</head>
+<body>
+<div class="top">
+  <h1>🏢 مجموعة أبو يونس · لوحة ذكية</h1>
+  <div>
+    <button class="btn" id="btnRefresh" style="padding:6px 12px;font-size:.78rem">تحديث</button>
+    <a href="admin-home.html" style="margin-right:10px">← الإدارة</a>
+  </div>
+</div>
+<div class="wrap" id="app" style="display:none">
+  <p class="muted" id="srcInfo">جاري تجميع بيانات كل الشركات…</p>
+  <div class="kpis" id="kpis"></div>
+  <div class="tabs">
+    <button class="on" data-p="ai">🤖 المساعد الذكي</button>
+    <button data-p="items">أصناف المجموعة</button>
+    <button data-p="cos">حسب الشركة</button>
+    <button data-p="ar">أرصدة عملاء</button>
+  </div>
+  <div class="pane on" id="p-ai">
+    <div class="card ai-box">
+      <h2>مساعد اتخاذ القرار</h2>
+      <p class="muted">تحليل تلقائي من بيانات الشركات · يُحدَّث مع كل تحديث</p>
+      <div id="aiOut"></div>
+    </div>
+  </div>
+  <div class="pane" id="p-items">
+    <div class="card">
+      <h2>أصناف جميع الشركات (مجمّعة)</h2>
+      <input id="qItem" placeholder="بحث صنف…"/>
+      <div style="max-height:55vh;overflow:auto">
+        <table><thead><tr><th>صنف</th><th>شركات</th><th>رصيد تقديري</th><th>سعر جملة</th></tr></thead>
+        <tbody id="itemsBody"></tbody></table>
+      </div>
+    </div>
+  </div>
+  <div class="pane" id="p-cos">
+    <div class="card"><h2>ملخص لكل شركة</h2><div id="cosBody"></div></div>
+  </div>
+  <div class="pane" id="p-ar">
+    <div class="card"><h2>أعلى أرصدة عملاء (مجموعة)</h2>
+      <table><thead><tr><th>عميل</th><th>شركة</th><th>متبقي تقديري</th></tr></thead>
+      <tbody id="arBody"></tbody></table>
+    </div>
+  </div>
+</div>
+<div class="login" id="loginBox">
+  <h2 style="margin-bottom:10px">دخول مجموعة أبو يونس</h2>
+  <label class="muted">البريد</label>
+  <input id="lgEmail" type="email" placeholder="admin@…"/>
+  <label class="muted">كلمة المرور</label>
+  <input id="lgPass" type="password"/>
+  <button class="btn" id="lgBtn" style="width:100%">دخول</button>
+  <p class="muted" id="lgMsg" style="margin-top:8px"></p>
+</div>
+<script>
+const COS=["الراعي","الحموي","زدنا","فوليانا","بسكو مصر"];
+let sb=null, user=null, group={};
+
+function num(v){const n=parseFloat(v);return isFinite(n)?n:0}
+function fmt(n){return Number(n||0).toLocaleString("en-US",{maximumFractionDigits:2})}
+function balOf(db,itemId){
+  let bal=0;
+  const it=(db.items||[]).find(i=>i.id===itemId);
+  if(it) bal+=num(it.openQty);
+  (db.purchases||[]).forEach(p=>{if(p.itemId===itemId)bal+=num(p.qty)});
+  (db.sales||[]).forEach(s=>{if(s.itemId===itemId)bal-=num(s.qty)});
+  (db.customerReturns||[]).forEach(r=>{if(r.itemId===itemId)bal+=num(r.qty)});
+  (db.supplierReturns||[]).forEach(r=>{if(r.itemId===itemId)bal-=num(r.qty)});
+  return bal;
+}
+function custRemain(db,cid){
+  let r=0;
+  const cu=(db.customers||[]).find(c=>c.id===cid);
+  if(cu) r+=num(cu.openBal!=null?cu.openBal:cu.open);
+  (db.sales||[]).forEach(s=>{if(s.customerId===cid&&s.pay!=="كاش"){
+    let n=num(s.qty)*num(s.price); if(num(s.disc)) n*=(1-num(s.disc)/100); n-=num(s.discAmt||0); r+=n;
+  }});
+  (db.collections||[]).forEach(c=>{if(c.customerId===cid)r-=num(c.amt)});
+  (db.customerReturns||[]).forEach(x=>{if(x.customerId===cid)r-=num(x.qty)*num(x.price)});
+  return r;
+}
+
+async function loadCompany(name){
+  // cloud then seed
+  try{
+    const {data}=await sb.from("company_data").select("data").eq("id",name).maybeSingle();
+    if(data&&data.data&&((data.data.items||[]).length||(data.data.customers||[]).length))
+      return data.data;
+  }catch(e){}
+  try{
+    const raw=localStorage.getItem("acc_abu_"+name+"_v2");
+    if(raw){ const o=JSON.parse(raw); if((o.items||[]).length||(o.customers||[]).length) return o; }
+  }catch(e){}
+  if(window.COMPANY_SEEDS&&window.COMPANY_SEEDS[name]) return window.COMPANY_SEEDS[name];
+  return {items:[],customers:[],sales:[],purchases:[],collections:[],expenses:[],payments:[]};
+}
+
+async function refreshAll(){
+  group={};
+  for(const c of COS){ group[c]=await loadCompany(c); }
+  renderAll();
+  srcInfo.textContent="آخر تحديث: "+new Date().toLocaleString("ar-EG")+" · شركات: "+COS.join(" · ");
+}
+
+function renderAll(){
+  let itemsN=0, custN=0, salesN=0, salesVal=0, stockVal=0, arTotal=0;
+  const itemMap={}; // name -> {cos, bal, w}
+  const arList=[];
+  COS.forEach(co=>{
+    const db=group[co]||{};
+    itemsN+=(db.items||[]).length;
+    custN+=(db.customers||[]).length;
+    salesN+=(db.sales||[]).length;
+    (db.sales||[]).forEach(s=>{
+      let n=num(s.qty)*num(s.price); if(num(s.disc)) n*=(1-num(s.disc)/100); n-=num(s.discAmt||0);
+      salesVal+=n;
+    });
+    (db.items||[]).forEach(it=>{
+      const bal=balOf(db,it.id);
+      stockVal+=bal*num(it.w||it.r||0)*0.5; // rough
+      const key=(it.name||"").trim()||it.code||it.id;
+      if(!itemMap[key]) itemMap[key]={name:key, cos:[], bal:0, w:num(it.w||0)};
+      if(!itemMap[key].cos.includes(co)) itemMap[key].cos.push(co);
+      itemMap[key].bal+=bal;
+      if(num(it.w)>itemMap[key].w) itemMap[key].w=num(it.w);
+    });
+    (db.customers||[]).forEach(c=>{
+      const rem=custRemain(db,c.id);
+      if(rem>1) arList.push({name:c.name, store:c.storeName||"", co, rem});
+      arTotal+=Math.max(0,rem);
+    });
+  });
+  kpis.innerHTML=`
+    <div class="kpi"><div class="l">أصناف (صفوف)</div><div class="v">${itemsN}</div></div>
+    <div class="kpi"><div class="l">عملاء</div><div class="v">${custN}</div></div>
+    <div class="kpi"><div class="l">حركات بيع</div><div class="v">${salesN}</div></div>
+    <div class="kpi"><div class="l">قيمة مبيعات</div><div class="v" style="color:var(--g)">${fmt(salesVal)}</div></div>
+    <div class="kpi"><div class="l">مديونية عملاء</div><div class="v" style="color:var(--o)">${fmt(arTotal)}</div></div>
+  `;
+  // items table
+  const q=(qItem.value||"").trim().toLowerCase();
+  itemsBody.innerHTML=Object.values(itemMap)
+    .filter(x=>!q||x.name.toLowerCase().includes(q))
+    .sort((a,b)=>b.bal-a.bal)
+    .slice(0,300)
+    .map(x=>`<tr><td>${x.name}</td><td>${x.cos.join("، ")}</td><td>${fmt(x.bal)}</td><td>${fmt(x.w)}</td></tr>`).join("")||"<tr><td colspan=4>لا بيانات</td></tr>";
+  // per company
+  cosBody.innerHTML=COS.map(co=>{
+    const db=group[co]||{};
+    const sales=(db.sales||[]).reduce((a,s)=>{let n=num(s.qty)*num(s.price);if(num(s.disc))n*=(1-num(s.disc)/100);return a+n;},0);
+    return `<div style="padding:8px 0;border-bottom:1px solid var(--bd)">
+      <b>${co}</b> · أصناف ${(db.items||[]).length} · عملاء ${(db.customers||[]).length} · مبيعات ${fmt(sales)}
+      <a href="حسابات_${co==="بسكو مصر"?"بسكو_مصر":co}.html" style="color:var(--p);margin-right:8px">فتح</a>
+    </div>`;
+  }).join("");
+  arList.sort((a,b)=>b.rem-a.rem);
+  arBody.innerHTML=arList.slice(0,40).map(x=>`<tr><td>${x.name}${x.store?" · "+x.store:""}</td><td>${x.co}</td><td>${fmt(x.rem)}</td></tr>`).join("")||"<tr><td colspan=3>لا أرصدة</td></tr>";
+  // AI insights
+  const alerts=[];
+  COS.forEach(co=>{
+    const db=group[co]||{};
+    if(!(db.items||[]).length) alerts.push({t:"warn",m:`${co}: لا أصناف محمّلة — ارفع البيانات أو أدخل أصنافاً.`});
+    const low=(db.items||[]).filter(it=>balOf(db,it.id)<3).length;
+    if(low>5) alerts.push({t:"bad",m:`${co}: ${low} أصناف رصيدها أقل من 3 — راجع إعادة الطلب.`});
+    const topDebt=arList.filter(x=>x.co===co&&x.rem>5000).slice(0,3);
+    topDebt.forEach(x=>alerts.push({t:"warn",m:`${co}: عميل ${x.name} مديونية ${fmt(x.rem)} — ركّز التحصيل.`}));
+  });
+  if(salesVal<=0) alerts.push({t:"info",m:"لا مبيعات مجمّعة ظاهرة — تأكد من مزامنة بيانات الشركات للسحابة."});
+  else alerts.push({t:"ok",m:`إجمالي حركة البيع عبر المجموعة حوالي ${fmt(salesVal)} — راقب هامش الربح مقابل المشتريات.`});
+  // recommendations
+  alerts.push({t:"info",m:"نصيحة: اعتمد مسودات المندوبين يومياً حتى لا يتراكم الخصم من السيارة/المخزن."});
+  alerts.push({t:"info",m:"نصيحة: وحّد أسماء الأصناف بين الشركات لتسهيل تجميع المجموعة والمقارنة."});
+  if(!alerts.some(a=>a.t==="warn"||a.t==="bad"))
+    alerts.push({t:"ok",m:"لا تنبيهات حرجة حالياً حسب البيانات المتاحة."});
+  aiOut.innerHTML=alerts.map(a=>`<div class="alert ${a.t}">${a.m}</div>`).join("");
+}
+
+document.querySelectorAll(".tabs button").forEach(b=>{
+  b.onclick=()=>{
+    document.querySelectorAll(".tabs button").forEach(x=>x.classList.remove("on"));
+    document.querySelectorAll(".pane").forEach(x=>x.classList.remove("on"));
+    b.classList.add("on");
+    document.getElementById("p-"+b.dataset.p).classList.add("on");
+  };
+});
+qItem.oninput=()=>renderAll();
+btnRefresh.onclick=()=>refreshAll();
+
+async function login(){
+  lgMsg.textContent="";
+  try{
+    const url=(window.SUPABASE_URL||"").trim();
+    const key=(window.SUPABASE_ANON_KEY||"").trim();
+    sb=supabase.createClient(url,key,{auth:{persistSession:true,autoRefreshToken:true}});
+    const {data,error}=await sb.auth.signInWithPassword({email:lgEmail.value.trim(),password:lgPass.value});
+    if(error) throw error;
+    user=data.user;
+    loginBox.style.display="none"; app.style.display="block";
+    await refreshAll();
+    setInterval(()=>refreshAll(), 60000);
+  }catch(e){ lgMsg.textContent=e.message||String(e); }
+}
+lgBtn.onclick=login;
+(async()=>{
+  try{
+    const url=(window.SUPABASE_URL||"").trim();
+    const key=(window.SUPABASE_ANON_KEY||"").trim();
+    sb=supabase.createClient(url,key,{auth:{persistSession:true,autoRefreshToken:true}});
+    const {data}=await sb.auth.getSession();
+    if(data.session){ user=data.session.user; loginBox.style.display="none"; app.style.display="block"; await refreshAll(); setInterval(()=>refreshAll(),60000); }
+  }catch(e){}
+})();
+</script>
+
+<footer class="ay-footer no-print" style="text-align:center;margin:28px 12px 16px;padding:12px 10px;font-size:.72rem;color:#64748b;border-top:1px solid #e2e8f0;line-height:1.6">
+  تصميم وبرمجة د.م/ ايمن زغلول — ت/ 01063188440
+</footer>
+
+</body>
+</html>

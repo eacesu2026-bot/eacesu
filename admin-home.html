@@ -1,0 +1,87 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,viewport-fit=cover"/>
+<meta name="theme-color" content="#5c4033"/>
+<title>لوحة الإدارة — أبو يونس</title>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<script src="config.js"></script>
+<script src="io-tools.js"></script>
+<style>
+:root{--brown:#5c4033;--cream:#f7f1e6;--gold:#8b7355;--bd:#d4c4a8;--card:#fffdf9;--t:#3d2b22}
+*{box-sizing:border-box;margin:0;padding:0}
+body{font-family:Segoe UI,Tahoma,Arial;background:var(--cream);color:var(--t);min-height:100vh;padding:12px}
+.top{display:flex;justify-content:space-between;align-items:center;gap:8px;margin-bottom:14px;flex-wrap:wrap}
+.top img{height:48px;border-radius:8px}
+.badge{font-size:.72rem;padding:4px 10px;border-radius:999px;border:1px solid var(--bd);background:#fff}
+.badge.on{border-color:#15803d;color:#15803d}
+.badge.off{border-color:#c2410c;color:#c2410c}
+.grid{display:grid;grid-template-columns:repeat(2,1fr);gap:10px;max-width:640px;margin:0 auto}
+@media(min-width:560px){.grid{grid-template-columns:repeat(3,1fr)}}
+a.card,button.card{
+  display:flex;flex-direction:column;align-items:center;justify-content:center;gap:8px;
+  min-height:100px;padding:14px;background:var(--card);border:1px solid var(--bd);border-radius:14px;
+  text-decoration:none;color:var(--t);font-weight:700;font-size:.88rem;cursor:pointer;font-family:inherit
+}
+a.card.main{background:var(--brown);color:#f7f1e6;border-color:var(--brown)}
+a.card.teal{background:#0f766e;color:#fff;border-color:#0f766e}
+a.card.orange{background:#c2410c;color:#fff;border-color:#c2410c}
+.sec{font-size:.75rem;color:var(--gold);margin:18px auto 8px;max-width:640px;border-bottom:2px solid var(--bd);padding-bottom:4px}
+.msg{text-align:center;font-size:.8rem;margin:8px;min-height:1.2em}
+.msg.err{color:#b91c1c}.msg.ok{color:#15803d}
+</style>
+</head>
+<body>
+  <div class="top">
+    <img src="logo-abu-younes.jpg" alt="أبو يونس"/>
+    <div>
+      <span class="badge" id="cloudBadge">سحابة...</span>
+      <span class="badge" id="userBadge">—</span>
+      <button type="button" class="badge" id="btnOut" style="cursor:pointer">خروج</button>
+    </div>
+  </div>
+  <div class="msg" id="msg"></div>
+  <div class="sec">الشركة الموحّدة — أصناف وموردين</div>
+  <div class="grid">
+    <a class="card main" href="حسابات_ابويونس_للتجارة_والتوكيلات.html" style="grid-column:1/-1"><span>🏢</span>ابويونس للتجارة والتوكيلات<br/><span style="font-size:.7rem;font-weight:500;opacity:.9">دمج الأصناف والموردين + فلترة الشركات</span></a>
+  </div>
+  <div class="sec">التقارير</div>
+  <div class="grid">
+    <a class="card main" href="الملخص_الشامل.html"><span>📊</span>الملخص الشامل</a>
+  </div>
+  <div class="sec">الشركات</div>
+  <div class="grid">
+    <a class="card" href="حسابات_الراعي.html"><span>🏢</span>الراعي</a>
+    <a class="card" href="حسابات_الحموي.html"><span>🏢</span>الحموي</a>
+    <a class="card" href="حسابات_زدنا.html"><span>🏢</span>زدنا</a>
+    <a class="card" href="حسابات_فوليانا.html"><span>🏢</span>فوليانا</a>
+    <a class="card" href="حسابات_بسكو_مصر.html"><span>🏢</span>بسكو مصر</a>
+    </div>
+  <div class="sec">المندوبون</div>
+  <div class="grid">
+    <a class="card orange" href="admin-reps.html"><span>✅</span>إدارة المندوبين</a>
+  </div>
+  <p style="text-align:center;margin-top:24px;font-size:.72rem;color:var(--gold)">
+    السحابة مربوطة · يمكن فتح الشركات والعمل محليًا ثم المزامنة
+  </p>
+<script>
+(async function(){
+  const url=(window.SUPABASE_URL||"").trim();
+  const key=(window.SUPABASE_ANON_KEY||"").trim();
+  if(!url||!key){ cloudBadge.textContent="بدون سحابة"; cloudBadge.className="badge off"; return; }
+  const sb=supabase.createClient(url,key,{auth:{persistSession:true,autoRefreshToken:true}});
+  const {data}=await sb.auth.getSession();
+  if(!data.session){ location.href="login.html?next=admin-home.html"; return; }
+  userBadge.textContent=data.session.user.email||"إدارة";
+  cloudBadge.textContent="سحابة ✓"; cloudBadge.className="badge on";
+  btnOut.onclick=async()=>{ await sb.auth.signOut(); location.href="index.html"; };
+})();
+</script>
+
+<footer class="ay-footer no-print" style="text-align:center;margin:28px 12px 16px;padding:12px 10px;font-size:.72rem;color:#64748b;border-top:1px solid #e2e8f0;line-height:1.6">
+  تصميم وبرمجة د.م/ ايمن زغلول — ت/ 01063188440
+</footer>
+
+</body>
+</html>

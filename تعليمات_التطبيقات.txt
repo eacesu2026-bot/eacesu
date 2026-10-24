@@ -1,0 +1,17 @@
+تطبيقات الجوال (PWA) — نفس سحابة Supabase
+
+1) تطبيق المندوب: افتح rep.html من الجوال → قائمة المتصفح → "إضافة إلى الشاشة الرئيسية"
+2) تطبيق الإدارة (اطلاع فقط): افتح admin-mobile.html → إضافة إلى الشاشة الرئيسية
+
+إشعارات واتساب الفورية (اختياري عبر CallMeBot):
+1) ادخل https://www.callmebot.com/blog/free-api-whatsapp-messages/
+2) فعّل البوت واحصل على apikey
+3) في config.js:
+   window.ADMIN_WHATSAPP = "2010xxxxxxxx";
+   window.CALLMEBOT_APIKEY = "مفتاحك";
+   window.WHATSAPP_NOTIFY = true;
+
+عند إرسال مسودة من المندوب:
+- إشعار داخل المتصفح/التطبيق
+- رسالة واتساب لرقم الإدارة (إن ضُبط المفتاح)
+- تحديث فوري في لوحة الإدارة وتطبيق الاطلاع

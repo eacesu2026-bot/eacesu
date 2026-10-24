@@ -1,0 +1,781 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width,initial-scale=1"/>
+<title>أبو يونس — صاحب النشاط</title>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<script src="config.js"></script>
+<script src="io-tools.js"></script>
+<script src="company_seeds.js"></script>
+<style>
+:root{--bg:#0f172a;--s:#1e293b;--s2:#334155;--t:#f1f5f9;--m:#94a3b8;--p:#3b82f6;--g:#22c55e;--r:#ef4444;--o:#f59e0b;--bd:#334155}
+*{box-sizing:border-box;margin:0;padding:0}
+body{font-family:system-ui,Tahoma,sans-serif;background:var(--bg);color:var(--t);min-height:100vh}
+.top{display:flex;justify-content:space-between;align-items:center;padding:12px 16px;background:var(--s);border-bottom:1px solid var(--bd);position:sticky;top:0;z-index:10}
+.top img{height:36px;border-radius:8px}
+.wrap{max-width:1100px;margin:0 auto;padding:14px}
+.card{background:var(--s);border:1px solid var(--bd);border-radius:14px;padding:14px;margin-bottom:12px}
+.card h2{font-size:.95rem;margin-bottom:10px}
+.grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(200px,1fr));gap:10px}
+.co-card{background:var(--s2);border-radius:12px;padding:12px;border:1px solid var(--bd)}
+.co-card h3{font-size:.9rem;margin-bottom:6px}
+.kpi{background:var(--s2);border-radius:10px;padding:10px}
+.kpi .l{font-size:.68rem;color:var(--m)}.kpi .v{font-size:1.1rem;font-weight:800;margin-top:2px}
+.btn{background:var(--p);color:#fff;border:0;border-radius:10px;padding:10px 14px;font-weight:700;cursor:pointer;text-decoration:none;display:inline-block;font-size:.8rem}
+.btn.ghost{background:transparent;border:1px solid var(--bd);color:var(--t)}
+.badge{font-size:.72rem;padding:4px 10px;border-radius:999px;background:var(--s2);border:1px solid var(--bd);color:var(--m);margin-left:6px}
+.muted{color:var(--m);font-size:.75rem}
+.warn{background:rgba(245,158,11,.12);border:1px solid rgba(245,158,11,.35);color:#fcd34d;padding:10px;border-radius:10px;margin-bottom:12px;font-size:.8rem;line-height:1.6}
+.msg{margin-top:8px;font-size:.8rem}.msg.ok{color:var(--g)}.msg.err{color:var(--r)}
+label{display:block;font-size:.72rem;color:var(--m);margin:8px 0 4px}
+input,select,textarea{width:100%;padding:10px;border-radius:10px;border:1px solid var(--bd);background:var(--s2);color:var(--t);font-size:.85rem}
+textarea{min-height:80px;resize:vertical}
+.login-wrap{max-width:380px;margin:60px auto;padding:16px}
+table{width:100%;border-collapse:collapse;font-size:.78rem}
+th,td{padding:6px 8px;border-bottom:1px solid var(--bd);text-align:right}
+th{color:var(--m);font-weight:600}
+.filters{display:flex;flex-wrap:wrap;gap:8px;align-items:end;margin-bottom:10px}
+.filters label{margin:0}.filters input,.filters select{width:auto;min-width:130px}
+.note{font-size:.72rem;color:var(--m);margin-top:8px}
+</style>
+</head>
+<body>
+<div id="loginView" class="login-wrap">
+  <div class="card">
+    <h2 style="text-align:center;margin-bottom:12px">أبو يونس · صاحب النشاط</h2>
+    <label>البريد</label><input type="email" id="lgEmail" autocomplete="username"/>
+    <label>كلمة المرور</label><input type="password" id="lgPass" autocomplete="current-password"/>
+    <button class="btn" id="lgBtn" style="width:100%;margin-top:10px">دخول</button>
+    <div class="msg" id="lgMsg"></div>
+  </div>
+</div>
+
+<div id="appView" style="display:none">
+  <div class="top">
+    <div style="display:flex;align-items:center;gap:10px">
+      <img src="logo-abu-younes.jpg" alt=""/>
+      <div>
+        <div style="font-weight:800;font-size:.95rem">أبو يونس</div>
+        <div style="font-size:.7rem;opacity:.85">صاحب النشاط · اطلاع + ملاحظات</div>
+      </div>
+    </div>
+    <div>
+      <span class="badge" id="userBadge">—</span>
+      <button type="button" class="badge" id="btnOut" style="cursor:pointer;border:0">خروج</button>
+    </div>
+  </div>
+  <div class="wrap">
+    <div class="warn">هذه الشاشة <b>للاطلاع فقط</b> — لا يمكن إدخال أو تعديل بيانات محاسبية. يمكنك إرسال ملاحظات للمستخدمين.</div>
+    <p class="muted" id="srcInfo">جاري التحميل…</p>
+
+    <div class="card">
+      <h2>ملخص الشركات</h2>
+      <div class="grid" id="coGrid"></div>
+    </div>
+
+    <div class="card">
+      <h2>تقرير الشركات</h2>
+      <p class="note">البيانات من company_data.id أو acc_abu_* · المبيعات/التحصيل/المدفوعات/المصروفات داخل الفترة · متبقي العملاء والموردين وقيمة المخزن حتى تاريخ «إلى»</p>
+      <div class="filters">
+        <label>الشركة
+          <select id="repCo"><option value="">— كل الشركات —</option></select>
+        </label>
+        <label>من <input type="date" id="repFrom"/></label>
+        <label>إلى <input type="date" id="repTo"/></label>
+        <label>المندوب
+          <select id="repRep"><option value="">— كل المناديب —</option></select>
+        </label>
+        <button type="button" class="btn" id="repGo">عرض التقرير</button>
+        <button type="button" class="btn ghost" id="btnOwnerReload">إعادة تحميل البيانات</button>
+      </div>
+      <div class="grid" id="repKpis" style="margin-bottom:10px"></div>
+      <div style="overflow:auto;max-height:360px">
+        <table>
+          <thead><tr>
+            <th>الشركة</th><th>كاش</th><th>آجل</th><th>إجمالي بيع</th><th>تحصيل</th>
+            <th>متبقي عملاء</th><th>مدفوعات موردين</th><th>متبقي موردين</th>
+            <th>قيمة مخزن</th><th>مصروفات</th>
+          </tr></thead>
+          <tbody id="repBody"></tbody>
+        </table>
+      </div>
+      <h2 style="margin-top:16px">تفاصيل عمل المناديب</h2>
+      <div id="repWork" class="muted" style="font-size:.8rem;line-height:1.7;max-height:420px;overflow:auto"></div>
+    </div>
+
+    <div class="card">
+      <h2>مسودات المندوبين (كل الشركات)</h2>
+      <div class="grid" id="draftKpis"></div>
+      <div id="draftList" class="muted" style="margin-top:10px;max-height:280px;overflow:auto"></div>
+      <p class="note">الاعتماد من لوحة إدارة المندوبين</p>
+    </div>
+
+    <div class="card">
+      <h2>إرسال ملاحظة</h2>
+      <label>إلى</label>
+      <select id="noteTo"><option value="">— اختر المستخدم —</option></select>
+      <label>نص الملاحظة</label>
+      <textarea id="noteBody" placeholder="اكتب ملاحظتك هنا..."></textarea>
+      <button class="btn" id="btnNote" style="margin-top:8px">إرسال الملاحظة</button>
+      <div class="msg" id="noteMsg"></div>
+    </div>
+
+    <div class="card">
+      <h2>الملاحظات المرسلة</h2>
+      <div id="notesOut" class="muted">—</div>
+    </div>
+
+    <div class="card">
+      <h2>روابط سريعة (اطلاع)</h2>
+      <div style="display:flex;flex-wrap:wrap;gap:8px">
+        <a class="btn ghost" href="الملخص_الشامل.html">الملخص الشامل</a>
+        <a class="btn ghost" href="admin-mobile.html">اطلاع الإدارة</a>
+        <a class="btn ghost" href="admin-reps.html">إدارة المندوبين</a>
+        <a class="btn ghost" href="حسابات_الراعي.html">الراعي</a>
+        <a class="btn ghost" href="حسابات_الحموي.html">الحموي</a>
+        <a class="btn ghost" href="حسابات_زدنا.html">زدنا</a>
+        <a class="btn ghost" href="حسابات_فوليانا.html">فوليانا</a>
+        <a class="btn ghost" href="حسابات_بسكو_مصر.html">بسكو مصر</a>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script>
+const COMPANIES=["الراعي","الحموي","زدنا","فوليانا","بسكو مصر","ابويونس للتجارة والتوكيلات"];
+function coFile(name){
+  if(name==="بسكو مصر") return "حسابات_بسكو_مصر.html";
+  return "حسابات_"+name+".html";
+}
+function normRepName(n){
+  let s=String(n||"").replace(/\s+/g," ").trim();
+  if(!s) return "";
+  s=s.replace(/^(مشرف|مندوب|السائق|سائق)\s*[:：\-]?\s*/u,"").trim();
+  s=s.replace(/[()]/g,"").trim();
+  if(/^\d+([.,]\d+)?$/.test(s)) return "";
+  if(/^[0-9a-f]{8}-[0-9a-f-]{20,}$/i.test(s)) return "";
+  if(/^[0-9a-f]{16,}$/i.test(s)) return "";
+  if(/فهد/.test(s)) return "فهد ابراهيم";
+  if(/مصط+ف[ىي]/.test(s) || /مصطف[ىي]/.test(s)) return "مصطفى محمد فتحي";
+  return s;
+}
+function displayRepName(n){
+  const u=normRepName(n);
+  if(!u) return "بدون مندوب";
+  if(u==="فهد ابراهيم") return "مشرف: فهد ابراهيم";
+  if(u==="مصطفى محمد فتحي") return "مندوب: مصطفى محمد فتحي";
+  return "مندوب: "+u;
+}
+function sameRep(a,b){
+  const x=normRepName(a), y=normRepName(b);
+  return !!x && x===y;
+}
+
+function num(v){const n=parseFloat(v);return isFinite(n)?n:0}
+function fmt(n){return Number(n||0).toLocaleString("en-US",{maximumFractionDigits:2})}
+function lineTotal(q,p,d,da){let n=num(q)*num(p); if(num(d)) n=n*(1-num(d)/100); return Math.max(0,n-num(da||0));}
+function inRange(ds,a,b){if(!ds)return !a&&!b; const x=String(ds).slice(0,10); return(!a||x>=a)&&(!b||x<=b)}
+
+let sb=null, user=null, group={};
+
+function initSB(){
+  const url=(window.SUPABASE_URL||"").trim();
+  const key=(window.SUPABASE_ANON_KEY||"").trim();
+  if(!url||!key) throw new Error("config.js ناقص (SUPABASE_URL / KEY)");
+  return supabase.createClient(url,key,{auth:{persistSession:true,autoRefreshToken:true}});
+}
+
+async function loadCompany(name){
+  let best=null, bestScore=-1, source="فارغ", lastErr="";
+  function score(o){
+    if(!o||typeof o!=="object") return 0;
+    return (o.items||[]).length*2 + (o.sales||[]).length*5 + (o.customers||[]).length*2
+      + (o.purchases||[]).length*3 + (o.collections||[]).length*2 + (o.payments||[]).length*2
+      + (o.suppliers||[]).length + (o.expenses||[]).length + (o.checks||[]).length;
+  }
+  function consider(o, src){
+    if(!o||typeof o!=="object") return;
+    // فك تغليف شائع
+    if(o.data && typeof o.data==="object" && (o.data.items||o.data.sales)) o=o.data;
+    if(o.db && typeof o.db==="object" && (o.db.items||o.db.sales)) o=o.db;
+    const s=score(o);
+    if(s>bestScore){ best=o; bestScore=s; source=src; }
+  }
+
+  // 1) سحابة: جلب كل الصفوف مرة واحدة ثم المطابقة (يتجاوز مشاكل eq/RLS الجزئية)
+  try{
+    if(sb){
+      let rows=[];
+      try{
+        const r=await sb.from("company_data").select("id,data,updated_at,company").limit(30);
+        if(r.error) lastErr=r.error.message||String(r.error);
+        else rows=r.data||[];
+      }catch(e){ lastErr=e.message||String(e); }
+      const aliases={
+        "الراعي":["الراعي","1","شركة 1","raei"],
+        "الحموي":["الحموي","2","شركة 2"],
+        "زدنا":["زدنا","3","شركة 3"],
+        "فوليانا":["فوليانا","4","شركة 4","voliana"],
+        "بسكو مصر":["بسكو مصر","بسكو","5","شركة 5"],
+        "ابويونس للتجارة والتوكيلات":["ابويونس للتجارة والتوكيلات","ابويونس","أبو يونس","مجموعة أبو يونس"]
+      };
+      const want=new Set([name].concat(aliases[name]||[]));
+      (rows||[]).forEach(row=>{
+        const id=String(row.id||row.company||"");
+        if(!want.has(id) && ![...want].some(w=>id.indexOf(w)>=0)) return;
+        if(row.data) consider(row.data, "سحابة:"+id+(row.updated_at?(" · "+String(row.updated_at).slice(0,16)):""));
+      });
+      // إن طلبنا الشركة الموحّدة ولم نجدها — ادمج من السحابة
+      if(name==="ابويونس للتجارة والتوكيلات" && bestScore<10){
+        const merged={items:[],suppliers:[],customers:[],sales:[],purchases:[],collections:[],payments:[],expenses:[],checks:[],customerReturns:[],supplierReturns:[],salaries:[],revenues:[],vehicleLoads:[]};
+        const srcs=["الراعي","الحموي","زدنا","فوليانا","بسكو مصر"];
+        (rows||[]).forEach(row=>{
+          const id=String(row.id||"");
+          if(srcs.indexOf(id)<0) return;
+          const d=row.data||{};
+          ["items","suppliers","customers","sales","purchases","collections","payments","expenses","checks","customerReturns","supplierReturns","salaries","revenues","vehicleLoads"].forEach(k=>{
+            (d[k]||[]).forEach(x=> merged[k].push(Object.assign({},x,{sourceCo:id})));
+          });
+        });
+        consider(merged, "سحابة:دمج الشركات");
+      }
+    }
+  }catch(e){ lastErr=e.message||String(e); console.warn("cloud", name, e); }
+
+  // 2) localStorage
+  const keys=[
+    "acc_abu_"+name+"_v2","acc_abu_"+name,
+    "ay_"+name,"ay_db_"+name,name,"company_"+name,"حسابات_"+name,"abu_"+name
+  ];
+  if(name==="بسكو مصر") keys.unshift("acc_abu_بسكو مصر_v2","acc_abu_بسكو_مصر_v2");
+  if(name==="ابويونس للتجارة والتوكيلات") keys.unshift("acc_abu_ابويونس_للتجارة_والتوكيلات_v2");
+  for(const k of keys){
+    try{
+      const raw=localStorage.getItem(k);
+      if(!raw) continue;
+      consider(JSON.parse(raw), "محلي("+k+")");
+    }catch(e){}
+  }
+  try{
+    for(let i=0;i<localStorage.length;i++){
+      const k=localStorage.key(i);
+      if(!k) continue;
+      if(k.indexOf("acc_abu")<0 && k.indexOf(name)<0) continue;
+      try{ consider(JSON.parse(localStorage.getItem(k)), "محلي*("+k+")"); }catch(e){}
+    }
+  }catch(e){}
+
+  // 3) بذرة
+  try{
+    if(window.COMPANY_SEEDS && window.COMPANY_SEEDS[name])
+      consider(window.COMPANY_SEEDS[name], "بذرة");
+    // دمج بذور للشركات الموحّدة
+    if(name==="ابويونس للتجارة والتوكيلات" && window.COMPANY_SEEDS){
+      const merged={items:[],suppliers:[],customers:[],sales:[],purchases:[],collections:[],payments:[],expenses:[],checks:[]};
+      ["الراعي","الحموي","زدنا","فوليانا","بسكو مصر"].forEach(co=>{
+        const d=window.COMPANY_SEEDS[co]; if(!d) return;
+        (d.items||[]).forEach(x=>merged.items.push(Object.assign({},x,{sourceCo:co})));
+        (d.suppliers||[]).forEach(x=>merged.suppliers.push(Object.assign({},x,{sourceCo:co})));
+        (d.sales||[]).forEach(x=>merged.sales.push(Object.assign({},x,{sourceCo:co})));
+        (d.purchases||[]).forEach(x=>merged.purchases.push(Object.assign({},x,{sourceCo:co})));
+        (d.customers||[]).forEach(x=>merged.customers.push(Object.assign({},x,{sourceCo:co})));
+        (d.collections||[]).forEach(x=>merged.collections.push(Object.assign({},x,{sourceCo:co})));
+        (d.payments||[]).forEach(x=>merged.payments.push(Object.assign({},x,{sourceCo:co})));
+        (d.expenses||[]).forEach(x=>merged.expenses.push(Object.assign({},x,{sourceCo:co})));
+      });
+      consider(merged, "بذرة:دمج");
+    }
+  }catch(e){}
+
+  if(best && bestScore>0)
+    return {db:best, source:source+" · نقاط:"+bestScore+(lastErr?(" · تنبيه:"+lastErr.slice(0,60)):"" )};
+  return {
+    db:{items:[],customers:[],suppliers:[],sales:[],purchases:[],collections:[],expenses:[],payments:[],checks:[],customerReturns:[],supplierReturns:[],vehicleLoads:[],salaries:[],revenues:[]},
+    source:"فارغ"+(lastErr?(" · خطأ: "+lastErr.slice(0,80)):" · افتح صفحة الشركة واحفظ ثم ☁ مزامنة من إدارة المندوبين")
+  };
+}
+
+
+function isRealSale(s){
+  if(!s) return false;
+  if(s.source==="vehicle_load") return false;
+  if(String(s.inv||"").indexOf("VL-")===0) return false;
+  if((s.note||"").indexOf("تحميل سيارة")>=0) return false;
+  return true;
+}
+function isRealCustomer(c){
+  if(!c) return false;
+  if(c.code==="VEHICLE" || c.name==="سيارة توزيع") return false;
+  return true;
+}
+function checkLeft(c){
+  const amt=num(c.amt);
+  let paid=0;
+  if(c.paidHistory&&c.paidHistory.length)
+    paid=c.paidHistory.reduce((a,h)=>a+num(h.amt),0);
+  else if(c.paid||num(c.paidAmt)>0)
+    paid=num(c.paidAmt)||amt;
+  return Math.max(0, amt-paid);
+}
+
+function sumSales(db, from, to){
+  return (db.sales||[]).filter(s=>isRealSale(s)&&inRange(s.date,from,to))
+    .reduce((a,s)=>a+lineTotal(s.qty,s.price,s.disc,s.discAmt),0);
+}
+function sumCash(db,from,to){
+  return (db.sales||[]).filter(s=>isRealSale(s)&&inRange(s.date,from,to)&&s.pay==="كاش")
+    .reduce((a,s)=>a+lineTotal(s.qty,s.price,s.disc,s.discAmt),0);
+}
+function sumCredit(db,from,to){
+  return (db.sales||[]).filter(s=>isRealSale(s)&&inRange(s.date,from,to)&&s.pay!=="كاش")
+    .reduce((a,s)=>a+lineTotal(s.qty,s.price,s.disc,s.discAmt),0);
+}
+function sumCol(db, from, to){
+  return (db.collections||[]).filter(c=>inRange(c.date,from,to)).reduce((a,c)=>a+num(c.amt),0);
+}
+function sumPurch(db, from, to){
+  return (db.purchases||[]).filter(p=>inRange(p.date,from,to)&&p.pay!=="بونص")
+    .reduce((a,p)=>a+lineTotal(p.qty,p.price,p.disc,p.discAmt),0);
+}
+function sumExp(db, from, to){
+  // مصروفات + مرتبات (كما في لوحة الشركة)
+  let a=(db.expenses||[]).filter(e=>inRange(e.date,from,to)).reduce((s,e)=>s+num(e.amt),0);
+  a+=(db.salaries||[]).filter(e=>inRange(e.date,from,to)).reduce((s,e)=>s+num(e.amt),0);
+  return a;
+}
+
+/** متبقي عملاء — مطابق customerAR في صفحات الشركات */
+function arRemain(db, asOf){
+  const map={};
+  (db.customers||[]).filter(isRealCustomer).forEach(c=>{
+    map[c.id]={openBal:num(c.openBal), credit:0, collected:0, ret:0};
+  });
+  (db.sales||[]).filter(isRealSale).forEach(s=>{
+    if(s.pay!=="آجل") return; // فقط الآجل كما في customerAR
+    if(asOf && s.date && String(s.date)>asOf) return;
+    if(!map[s.customerId]) map[s.customerId]={openBal:0,credit:0,collected:0,ret:0};
+    map[s.customerId].credit+=lineTotal(s.qty,s.price,s.disc,s.discAmt);
+  });
+  (db.customerReturns||[]).forEach(r=>{
+    if((r.pay||"آجل")==="كاش") return;
+    if(asOf && r.date && String(r.date)>asOf) return;
+    if(!map[r.customerId]) map[r.customerId]={openBal:0,credit:0,collected:0,ret:0};
+    map[r.customerId].ret+=num(r.qty)*num(r.price);
+  });
+  (db.collections||[]).forEach(c=>{
+    if(asOf && c.date && String(c.date)>asOf) return;
+    if(!map[c.customerId]) map[c.customerId]={openBal:0,credit:0,collected:0,ret:0};
+    map[c.customerId].collected+=num(c.amt);
+  });
+  return Object.values(map).reduce((a,x)=>a+Math.max(0, num(x.openBal)+x.credit-x.ret-x.collected),0);
+}
+
+/** مدفوعات موردين في الفترة */
+function sumSupplierPay(db,from,to){
+  let a=0;
+  (db.payments||[]).forEach(p=>{
+    if(!inRange(p.date,from,to)) return;
+    if(p.method==="خصم" || p.method==="شيك") return;
+    a+=num(p.amt);
+  });
+  (db.checks||[]).forEach(c=>{
+    if(c.paidHistory&&c.paidHistory.length){
+      c.paidHistory.forEach(h=>{ if(inRange(h.date,from,to)) a+=num(h.amt); });
+    } else if((c.paid||num(c.paidAmt)>0) && c.paidDate && inRange(c.paidDate,from,to)){
+      a+=num(c.paidAmt)||num(c.amt);
+    }
+  });
+  return a;
+}
+
+/** فواتير موردين — مطابق buildInvoices في صفحات الشركات */
+function buildSupplierInvoices(db, asOf){
+  const map={};
+  (db.purchases||[]).forEach(p=>{
+    if(p.pay==="بونص") return;
+    if(asOf && p.date && String(p.date)>asOf) return;
+    const k=(p.inv||"بدون")+"|"+(p.supplierId||"");
+    if(!map[k]) map[k]={inv:p.inv||"بدون", supplierId:p.supplierId, total:0, paid:0, ret:0};
+    map[k].total += lineTotal(p.qty,p.price,p.disc,p.discAmt);
+  });
+  (db.supplierReturns||[]).forEach(r=>{
+    if(asOf && r.date && String(r.date)>asOf) return;
+    const k=(r.discInv||r.inv||"")+"|"+(r.supplierId||"");
+    if(!map[k]) map[k]={inv:r.discInv||r.inv||"", supplierId:r.supplierId, total:0, paid:0, ret:0};
+    const kind=r.kind||(num(r.bonusIncluded)>0&&!(num(r.qtyValue)>0)?"بونص":"أساسي");
+    if(kind==="بونص") return;
+    const qVal = r.qtyValue!=null ? num(r.qtyValue) : num(r.qty);
+    map[k].ret += qVal * num(r.price);
+  });
+  (db.payments||[]).forEach(p=>{
+    if(asOf && p.date && String(p.date)>asOf) return;
+    const k=(p.inv||"")+"|"+(p.supplierId||"");
+    if(!map[k]) map[k]={inv:p.inv||"", supplierId:p.supplierId, total:0, paid:0, ret:0};
+    if(p.method==="شيك"){
+      // المسدد من سجل الشيكات فقط
+    } else {
+      map[k].paid += num(p.amt);
+    }
+  });
+  (db.checks||[]).forEach(c=>{
+    let paidPart=0;
+    if(c.paidHistory&&c.paidHistory.length){
+      paidPart=c.paidHistory.reduce((a,h)=>{
+        if(asOf && h.date && String(h.date)>asOf) return a;
+        return a+num(h.amt);
+      },0);
+    } else if(c.paid || num(c.paidAmt)>0){
+      if(!asOf || !c.paidDate || String(c.paidDate)<=asOf)
+        paidPart = num(c.paidAmt)||num(c.amt);
+    }
+    const k=(c.inv||"")+"|"+(c.supplierId||"");
+    if(!map[k]) return;
+    if(paidPart>0) map[k].paid += paidPart;
+  });
+  return Object.values(map);
+}
+
+/** متبقي موردين = افتتاحي + Σ max(0, فاتورة−مرتجع−مسدد) — مطابق الشركات */
+function apRemain(db, asOf){
+  const apOpen = (db.suppliers||[]).reduce((a,s)=>a+num(s.openBal),0);
+  const invs = buildSupplierInvoices(db, asOf);
+  const invRemain = invs.reduce((a,x)=>a+Math.max(0, x.total - x.ret - x.paid), 0);
+  return Math.max(0, apOpen + invRemain);
+}
+
+/**
+ * قيمة المخزون — مطابق stockMap + avgCost في الشركات
+ * (مخزن فقط بدون إجبار سيارة إن لم تُحفظ محلياً؛ إن وُجد vehicleStock يُضاف)
+ */
+function stockValue(db){
+  const map={};
+  (db.items||[]).forEach(it=>{
+    map[it.id]={id:it.id, openQty:num(it.openQty), in:0, out:0, inVal:0, crIn:0, srOut:0, car:0};
+  });
+  (db.purchases||[]).forEach(p=>{
+    if(!map[p.itemId]) return;
+    const q=num(p.qty);
+    map[p.itemId].in += q;
+    if(p.pay!=="بونص") map[p.itemId].inVal += lineTotal(p.qty,p.price,p.disc,p.discAmt);
+  });
+  (db.sales||[]).forEach(s=>{
+    if(!map[s.itemId]) return;
+    // نفس stockMap الحالي في الشركة: كل المبيعات تخصم إلا تحميل السيارة المزيّف
+    if(!isRealSale(s)) return;
+    // مبيعات المندوب من السيارة لا تخصم من المخزن في نسخة الشركة الحديثة
+    if(s.fromRep || s.source==="rep" || s.source==="مندوب") return;
+    map[s.itemId].out += num(s.qty);
+  });
+  (db.vehicleLoads||[]).forEach(v=>{
+    const id=v.itemId||v.item_id;
+    if(!id||!map[id]) return;
+    map[id].out += num(v.qty);
+  });
+  (db.customerReturns||[]).forEach(r=>{
+    if(!map[r.itemId]) return;
+    map[r.itemId].crIn += num(r.qty);
+  });
+  (db.supplierReturns||[]).forEach(r=>{
+    if(!map[r.itemId]) return;
+    map[r.itemId].srOut += num(r.qty);
+  });
+  const vs = db.vehicleStock || {};
+  if(vs && typeof vs==="object"){
+    Object.keys(vs).forEach(id=>{
+      if(!map[id]) map[id]={id, openQty:0,in:0,out:0,inVal:0,crIn:0,srOut:0,car:0};
+      map[id].car += num(vs[id]);
+    });
+  }
+  let total=0;
+  Object.keys(map).forEach(id=>{
+    const x=map[id];
+    const bal = num(x.openQty)+x.in-x.out+x.crIn-x.srOut;
+    const avg = (x.in>0 && x.inVal>0) ? (x.inVal/x.in) : 0;
+    let cost=avg;
+    if(!(cost>0)){
+      const it=(db.items||[]).find(i=>i.id===id);
+      if(it) cost=num(it.cost)||num(it.avgCost)||0;
+    }
+    total += Math.max(0, bal)*cost + Math.max(0, x.car)*cost;
+  });
+  return total;
+}
+
+function renderCompanyReport(){
+  const co=repCo.value;
+  const from=repFrom.value||"";
+  const to=repTo.value||"";
+  const list=co?[co]:COMPANIES;
+  let tCash=0,tCred=0,tSales=0,tCol=0,tPay=0,tAp=0,tAr=0,tSt=0,tExp=0;
+  repBody.innerHTML=list.map(name=>{
+    const db=(group[name]&&group[name].db)||{};
+    const cash=sumCash(db,from,to), cred=sumCredit(db,from,to);
+    const s=cash+cred, c=sumCol(db,from,to), e=sumExp(db,from,to);
+    const asOf=to||new Date().toISOString().slice(0,10);
+    const ar=arRemain(db, asOf), pay=sumSupplierPay(db,from,to), ap=apRemain(db, asOf), st=stockValue(db);
+    tCash+=cash; tCred+=cred; tSales+=s; tCol+=c; tPay+=pay; tAp+=ap; tAr+=ar; tSt+=st; tExp+=e;
+    return `<tr>
+      <td><b>${name}</b></td>
+      <td>${fmt(cash)}</td><td>${fmt(cred)}</td><td>${fmt(s)}</td><td>${fmt(c)}</td>
+      <td>${fmt(ar)}</td><td>${fmt(pay)}</td><td>${fmt(ap)}</td>
+      <td>${fmt(st)}</td><td>${fmt(e)}</td>
+    </tr>`;
+  }).join("")||"<tr><td colspan=10>لا بيانات</td></tr>";
+  repKpis.innerHTML=`
+    <div class="kpi"><div class="l">مبيعات كاش</div><div class="v" style="color:var(--g)">${fmt(tCash)}</div></div>
+    <div class="kpi"><div class="l">مبيعات آجل</div><div class="v">${fmt(tCred)}</div></div>
+    <div class="kpi"><div class="l">إجمالي البيع</div><div class="v" style="color:var(--g)">${fmt(tSales)}</div></div>
+    <div class="kpi"><div class="l">تحصيل عملاء</div><div class="v">${fmt(tCol)}</div></div>
+    <div class="kpi"><div class="l">متبقي عملاء</div><div class="v" style="color:var(--o)">${fmt(tAr)}</div></div>
+    <div class="kpi"><div class="l">مدفوعات موردين</div><div class="v" style="color:var(--r)">${fmt(tPay)}</div></div>
+    <div class="kpi"><div class="l">متبقي موردين</div><div class="v" style="color:var(--o)">${fmt(tAp)}</div></div>
+    <div class="kpi"><div class="l">قيمة المخزن</div><div class="v">${fmt(tSt)}</div></div>
+    <div class="kpi"><div class="l">مصروفات</div><div class="v" style="color:var(--r)">${fmt(tExp)}</div></div>`;
+    // قائمة المناديب
+  try{
+    const sel=document.getElementById("repRep");
+    if(sel){
+      const cur=sel.value;
+      const names=new Set();
+      list.forEach(name=>{
+        const db=(group[name]&&group[name].db)||{};
+        (db.sales||[]).forEach(s=>{
+          const u=normRepName(s.rep);
+          if(u) names.add(u);
+        });
+      });
+      const sorted=[...names].sort((a,b)=>displayRepName(a).localeCompare(displayRepName(b),"ar"));
+      sel.innerHTML='<option value="">— كل المناديب —</option>'+sorted.map(n=>`<option value="${n}">${displayRepName(n)}</option>`).join("");
+      if(cur && [...sel.options].some(o=>o.value===cur)) sel.value=cur;
+      else if(cur){
+        // إن كان الفلتر بالاسم القديم حوّله للموحّد
+        const u=normRepName(cur);
+        if(u && [...sel.options].some(o=>o.value===u)) sel.value=u;
+      }
+    }
+  }catch(e){}
+
+  const work=document.getElementById("repWork");
+  if(work){
+    const repFilter=(document.getElementById("repRep")||{}).value||"";
+    const by={};
+    list.forEach(name=>{
+      const db=(group[name]&&group[name].db)||{};
+      (db.sales||[]).forEach(s=>{
+        if(s.source==="vehicle_load" || String(s.inv||"").indexOf("VL-")===0) return;
+        if((s.note||"").indexOf("تحميل سيارة")>=0) return;
+        if(!inRange(s.date,from,to)) return;
+        const rep=normRepName(s.rep)||"بدون مندوب";
+        if(repFilter && !sameRep(rep, repFilter) && rep!==repFilter) return;
+        if(!by[rep]) by[rep]={sales:0,cash:0,credit:0,col:0,lines:0,qty:0,companies:new Set()};
+        const n=lineTotal(s.qty,s.price,s.disc,s.discAmt);
+        by[rep].sales+=n; by[rep].lines++; by[rep].qty+=num(s.qty);
+        if(s.pay==="كاش") by[rep].cash+=n; else by[rep].credit+=n;
+        by[rep].companies.add(name);
+      });
+      (db.collections||[]).forEach(c=>{
+        if(!inRange(c.date,from,to)) return;
+        let rep="بدون مندوب";
+        const sales=(db.sales||[]).filter(s=>s.customerId===c.customerId&&s.rep).slice().sort((a,b)=>String(b.date||"").localeCompare(String(a.date||"")));
+        if(sales.length) rep=normRepName(sales[0].rep)||rep;
+        if(repFilter && rep!==repFilter && rep.indexOf(repFilter)<0) return;
+        if(!by[rep]) by[rep]={sales:0,cash:0,credit:0,col:0,lines:0,qty:0,companies:new Set()};
+        by[rep].col+=num(c.amt);
+        by[rep].companies.add(name);
+      });
+    });
+    const names=Object.keys(by).sort((a,b)=>by[b].sales-by[a].sales);
+    let sumC=0,sumCr=0,sumS=0,sumL=0,sumCol=0;
+    names.forEach(r=>{ const x=by[r]; sumC+=x.cash; sumCr+=x.credit; sumS+=x.sales; sumL+=x.lines; sumCol+=x.col; });
+    const head = `<div style="display:flex;flex-wrap:wrap;gap:10px;margin-bottom:12px;padding:10px;background:rgba(59,130,246,.12);border-radius:10px">
+      <div><div class="muted">المندوب</div><b>${repFilter?displayRepName(repFilter):"الكل"}</b></div>
+      <div><div class="muted">أسطر البيع</div><b>${sumL}</b></div>
+      <div><div class="muted">إجمالي البيع</div><b style="color:var(--g)">${fmt(sumS)}</b></div>
+      <div><div class="muted">كاش</div><b style="color:var(--g)">${fmt(sumC)}</b></div>
+      <div><div class="muted">آجل</div><b style="color:var(--o)">${fmt(sumCr)}</b></div>
+      <div><div class="muted">تحصيل</div><b>${fmt(sumCol)}</b></div>
+    </div>`;
+    work.innerHTML=head+names.map(rep=>{
+      const x=by[rep];
+      return `<div style="border:1px solid var(--bd);border-radius:10px;padding:10px;margin-bottom:8px">
+        <b style="color:#93c5fd">${displayRepName(rep)}</b>
+        <div class="muted">الشركات: ${[...x.companies].join("، ")}</div>
+        <div>مبيعات: <b>${fmt(x.sales)}</b> · كاش <b style="color:var(--g)">${fmt(x.cash)}</b> · آجل <b style="color:var(--o)">${fmt(x.credit)}</b> · أسطر ${x.lines} · كمية ${fmt(x.qty)}</div>
+        <div>تحصيلات: <b>${fmt(x.col)}</b></div>
+      </div>`;
+    }).join("")||'<div class="muted">لا بيانات مندوبين في الفترة المحددة</div>';
+  }
+}
+
+
+async function login(){
+  lgMsg.textContent=""; lgMsg.className="msg";
+  try{
+    sb=initSB();
+    const {data,error}=await sb.auth.signInWithPassword({email:lgEmail.value.trim(),password:lgPass.value});
+    if(error) throw error;
+    user=data.user;
+    await afterLogin();
+  }catch(e){ lgMsg.className="msg err"; lgMsg.textContent=e.message||String(e); }
+}
+
+async function afterLogin(){
+  loginView.style.display="none";
+  appView.style.display="block";
+  userBadge.textContent=user.email||"صاحب النشاط";
+  const y=new Date().getFullYear();
+  if(!repFrom.value) repFrom.value=y+"-01-01";
+  if(!repTo.value) repTo.value=new Date().toISOString().slice(0,10);
+  await refreshAll();
+  await loadNoteTargets();
+  await loadSentNotes();
+  if(window.__ownerTimer) clearInterval(window.__ownerTimer);
+  window.__ownerTimer=setInterval(()=>{ refreshAll().catch(()=>{}); }, 30000);
+  // مزامنة سحابية تلقائية لبيانات الشركات المعروضة
+  try{
+    if(window.AppCloud){ AppCloud.init(); AppCloud.getSession().then(function(){
+      if(AppCloud.user && AppCloud.syncAllCompaniesFromLocal)
+        setInterval(function(){ AppCloud.syncAllCompaniesFromLocal().catch(function(){}); }, 90000);
+    }); }
+  }catch(e){}
+  document.addEventListener("visibilitychange", ()=>{ if(!document.hidden) refreshAll(); });
+}
+
+async function loadNoteTargets(){
+  const opts=[
+    '<option value="">— اختر المستلم —</option>',
+    '<option value="__admin__">الإدارة (جميع الحسابات)</option>',
+    '<option value="__all_reps__">كل المناديب والمشرفين</option>'
+  ];
+  try{
+    const {data}=await sb.from("rep_profiles").select("user_id,name,company,companies,active,job_title");
+    const seen={};
+    (data||[]).forEach(p=>{
+      if(!p.user_id||seen[p.user_id]||p.active===false) return;
+      seen[p.user_id]=1;
+      const job=(p.job_title||"").trim() || (String(p.name||"").indexOf("فهد")>=0?"مشرف":"مندوب");
+      const nm=p.name||p.user_id.slice(0,8);
+      opts.push(`<option value="${p.user_id}">${job}: ${nm}</option>`);
+    });
+  }catch(e){ console.warn(e); }
+  noteTo.innerHTML=opts.join("");
+}
+
+
+async function sendNote(){
+  noteMsg.className="msg"; noteMsg.textContent="";
+  const to=noteTo.value, body=(noteBody.value||"").trim();
+  if(!to||!body){ noteMsg.className="msg err"; noteMsg.textContent="اختر مستلمًا واكتب الملاحظة"; return; }
+  try{
+    if(!sb) throw new Error("لا اتصال بقاعدة البيانات");
+    const label = (noteTo.selectedOptions[0]&&noteTo.selectedOptions[0].textContent)||to;
+    const row={
+      from_user: user.id,
+      from_email: user.email||"",
+      to_user_id: (to==="__admin__" || to==="__all_reps__") ? null : to,
+      to_label: label,
+      body: body,
+      created_at: new Date().toISOString(),
+      read: false
+    };
+    // حفظ في جدول الملاحظات
+    let noteErr=null;
+    try{
+      const {error}=await sb.from("owner_notes").insert(row);
+      if(error) noteErr=error;
+    }catch(e){ noteErr=e; }
+
+    // إشعارات للمستلمين
+    const targets=[];
+    if(to==="__admin__"){
+      // كل ملفات الإدارة + كل المندوبين؟ الإدارة فقط — نرسل إشعاراً عاماً لكل المستخدمين في rep_profiles كملاحظة إدارية
+      try{
+        const {data:profs}=await sb.from("rep_profiles").select("user_id,name,job_title,active");
+        (profs||[]).forEach(p=>{
+          if(!p.user_id || p.active===false) return;
+          // اعتبر من ليس مندوب ميداني إدارة، أو أرسل للجميع كملاحظة
+          targets.push(p.user_id);
+        });
+      }catch(e){}
+      // إن لم نجد أحداً: إشعار بـ user_id لصاحب النشاط نفسه كأرشيف
+      if(!targets.length) targets.push(user.id);
+    } else if(to==="__all_reps__"){
+      try{
+        const {data:profs}=await sb.from("rep_profiles").select("user_id,active");
+        (profs||[]).forEach(p=>{ if(p.user_id && p.active!==false) targets.push(p.user_id); });
+      }catch(e){}
+    } else {
+      targets.push(to);
+    }
+
+    let notifOk=0, notifFail=0;
+    for(const uid of [...new Set(targets)]){
+      try{
+        const {error}=await sb.from("rep_notifications").insert({
+          user_id: uid,
+          title: "ملاحظة من صاحب النشاط",
+          body: body.slice(0,500),
+          kind: "owner_note",
+          ref_type: "note",
+          created_at: new Date().toISOString()
+        });
+        if(error) notifFail++; else notifOk++;
+      }catch(e){ notifFail++; }
+    }
+
+    // أرشيف محلي
+    const key="ay_owner_notes_"+(user&&user.id);
+    const list=JSON.parse(localStorage.getItem(key)||"[]");
+    list.unshift({...row, to_label:label, notifOk, noteErr: noteErr?(noteErr.message||String(noteErr)):null});
+    localStorage.setItem(key, JSON.stringify(list.slice(0,50)));
+
+    if(noteErr && notifOk===0){
+      throw new Error("فشل الحفظ: "+(noteErr.message||noteErr)+ " — نفّذ owner_notes.sql في Supabase");
+    }
+    noteMsg.className="msg ok";
+    noteMsg.textContent="تم الإرسال"+(notifOk?(" · إشعارات: "+notifOk):"")+(noteErr?(" · تحذير جدول الملاحظات: "+(noteErr.message||"").slice(0,80)):"");
+    noteBody.value="";
+    loadSentNotes();
+  }catch(e){ noteMsg.className="msg err"; noteMsg.textContent=e.message||String(e); }
+}
+
+
+function loadSentNotes(){
+  const key="ay_owner_notes_"+(user&&user.id);
+  const list=JSON.parse(localStorage.getItem(key)||"[]");
+  notesOut.innerHTML=list.slice(0,20).map(n=>`<div style="padding:8px 0;border-bottom:1px solid var(--bd)">
+    <b>إلى:</b> ${n.to_label||n.to_user_id||"—"}
+    <div>${n.body||""}</div>
+    <div class="muted">${n.created_at?new Date(n.created_at).toLocaleString("ar-EG"):""}</div>
+  </div>`).join("")||"لا ملاحظات بعد";
+}
+
+lgBtn.onclick=login;
+btnNote.onclick=sendNote;
+btnOut.onclick=async()=>{ try{await sb.auth.signOut()}catch(e){} location.href="index.html"; };
+(function(){ const b=document.getElementById("btnOwnerReload"); if(b) b.onclick=()=>refreshAll(); })();
+repGo.onclick=()=>renderCompanyReport();
+  const rr=document.getElementById("repRep"); if(rr) rr.onchange=()=>renderCompanyReport();
+repCo.onchange=()=>renderCompanyReport();
+
+(async()=>{
+  try{
+    sb=initSB();
+    const {data}=await sb.auth.getSession();
+    if(data.session){ user=data.session.user; await afterLogin(); }
+  }catch(e){}
+})();
+</script>
+<script>
+document.addEventListener("DOMContentLoaded",function(){
+  try{ if(window.AY_IO) AY_IO.injectToolbar({fileName:"صاحب_النشاط",pdfName:"تقرير_ابو_يونس"}); }catch(e){}
+});
+</script>
+
+<footer class="ay-footer no-print" style="text-align:center;margin:28px 12px 16px;padding:12px 10px;font-size:.72rem;color:#64748b;border-top:1px solid #e2e8f0;line-height:1.6">
+  تصميم وبرمجة د.م/ ايمن زغلول — ت/ 01063188440
+</footer>
+
+</body>
+</html>

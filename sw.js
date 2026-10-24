@@ -1,31 +1,22 @@
-/* EACESU Service Worker v4 — الصفحات: الشبكة أولًا (لا تعلق على نسخة قديمة)، الملفات الثابتة: الكاش أولًا */
-const CACHE = 'eacesu-v6';
-const ASSETS = ['./', './index.html', './manifest.json', './header-logos.png', './icon-192.png', './icon-512.png', './lib/fonts/ibm-plex-sans-arabic-arabic-400-normal.woff2', './lib/fonts/ibm-plex-sans-arabic-arabic-500-normal.woff2', './lib/fonts/ibm-plex-sans-arabic-arabic-700-normal.woff2', './lib/fonts/ibm-plex-sans-arabic-latin-400-normal.woff2'];
-self.addEventListener('install', (e) => {
-  e.waitUntil(caches.open(CACHE).then((c) => c.addAll(ASSETS)).then(() => self.skipWaiting()));
+/* Service worker — كاش خفيف للتشغيل كتطبيق (شبكة أولًا حتى تصل التحديثات فورًا) */
+const CACHE = "ay-v2";
+const ASSETS = ["./", "./index.html", "./logo-abu-younes.jpg", "./config.js", "./notify.js"];
+self.addEventListener("install", e => {
+  e.waitUntil(caches.open(CACHE).then(c => c.addAll(ASSETS).catch(()=>{})).then(()=>self.skipWaiting()));
 });
-self.addEventListener('activate', (e) => {
-  e.waitUntil(caches.keys().then((keys) => Promise.all(keys.filter((k) => k !== CACHE).map((k) => caches.delete(k)))).then(() => self.clients.claim()));
-});
-self.addEventListener('fetch', (e) => {
-  const req = e.request;
-  if (req.method !== 'GET') return;
-  const url = new URL(req.url);
-  if (url.origin !== self.location.origin || url.pathname.startsWith('/api/')) return; // لا نتدخل في API/الموارد الخارجية
-  const isPage = req.mode === 'navigate' || url.pathname.endsWith('.html') || url.pathname === '/' || url.pathname.endsWith('/');
-  if (isPage) {
-    e.respondWith(
-      fetch(req).then((res) => {
-        if (res.ok) { const copy = res.clone(); caches.open(CACHE).then((c) => c.put(req, copy)); }
-        return res;
-      }).catch(() => caches.match(req).then((r) => r || caches.match('./index.html')))
-    );
-    return;
-  }
+self.addEventListener("activate", e => e.waitUntil(
+  caches.keys().then(keys => Promise.all(keys.filter(k => k !== CACHE).map(k => caches.delete(k)))).then(()=>self.clients.claim())
+));
+self.addEventListener("fetch", e => {
+  const u = e.request.url;
+  if (e.request.method !== "GET") return;
+  if (u.includes("supabase") || u.includes("callmebot") || u.includes("wa.me")) return;
+  // شبكة أولًا، والكاش عند انقطاع الاتصال فقط
   e.respondWith(
-    caches.match(req).then((cached) => cached || fetch(req).then((res) => {
-      if (res.ok) { const copy = res.clone(); caches.open(CACHE).then((c) => c.put(req, copy)); }
+    fetch(e.request).then(res => {
+      const copy = res.clone();
+      caches.open(CACHE).then(c => c.put(e.request, copy)).catch(()=>{});
       return res;
-    }))
+    }).catch(() => caches.match(e.request))
   );
 });
