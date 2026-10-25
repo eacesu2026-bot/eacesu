@@ -74,3 +74,6 @@ python3 tests/xss_fuzz.py
 
 ## AppCloud (v8)
 خادم المزامنة صار اسمه **AppCloud** ويعمل بلا Vercel Blob أيضًا: `node appcloud/server.mjs` (راجع `appcloud/README_APPCLOUD.md`). نافذة AppCloud داخل المنصة تفحص الاتصال وتخبرك بالسبب إن لم تعمل المزامنة.
+
+### استضافة ثابتة (GitHub Pages / Netlify / أي رفع ملفات)؟ استخدم AppCloud على Supabase
+شغّل `supabase_appcloud.sql` في Supabase، ثم `select public.appcloud_set_key('مفتاحك الطويل');`، والصق Project URL وanon key في `appcloud-config.js` وأعد الرفع. التفاصيل: `appcloud/README_APPCLOUD.md` (القسم ج). تحذير: قاعدة Supabase المجانية تتوقف بعد أسبوع بلا نشاط — افتح الموقع أسبوعيًا أو رقِّ الخطة.

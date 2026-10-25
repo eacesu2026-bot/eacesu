@@ -15,7 +15,7 @@
       ]
     },
     {
-      "source": "/(sw.js|index.html|manifest.json)",
+      "source": "/(sw.js|index.html|manifest.json|appcloud-config.js)",
       "headers": [ { "key": "Cache-Control", "value": "no-cache" } ]
     }
   ]

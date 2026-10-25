@@ -1,5 +1,5 @@
 /* EACESU Service Worker v4 — الصفحات: الشبكة أولًا (لا تعلق على نسخة قديمة)، الملفات الثابتة: الكاش أولًا */
-const CACHE = 'eacesu-v6';
+const CACHE = 'eacesu-v7';
 const ASSETS = ['./', './index.html', './manifest.json', './header-logos.png', './icon-192.png', './icon-512.png', './lib/fonts/ibm-plex-sans-arabic-arabic-400-normal.woff2', './lib/fonts/ibm-plex-sans-arabic-arabic-500-normal.woff2', './lib/fonts/ibm-plex-sans-arabic-arabic-700-normal.woff2', './lib/fonts/ibm-plex-sans-arabic-latin-400-normal.woff2'];
 self.addEventListener('install', (e) => {
   e.waitUntil(caches.open(CACHE).then((c) => c.addAll(ASSETS)).then(() => self.skipWaiting()));
@@ -12,7 +12,7 @@ self.addEventListener('fetch', (e) => {
   if (req.method !== 'GET') return;
   const url = new URL(req.url);
   if (url.origin !== self.location.origin || url.pathname.startsWith('/api/')) return; // لا نتدخل في API/الموارد الخارجية
-  const isPage = req.mode === 'navigate' || url.pathname.endsWith('.html') || url.pathname === '/' || url.pathname.endsWith('/');
+  const isPage = req.mode === 'navigate' || url.pathname.endsWith('.html') || url.pathname.endsWith('appcloud-config.js') || url.pathname === '/' || url.pathname.endsWith('/');
   if (isPage) {
     e.respondWith(
       fetch(req).then((res) => {
