@@ -46,8 +46,7 @@ git push origin main
 
 1. Vercel → Project → **Storage** → **Blob** → Create  
 2. اربط المتجر بالمشروع  
-3. سيُضاف تلقائيًا: `BLOB_READ_WRITE_TOKEN`
-3b. **أضف `ADMIN_UPLOAD_KEY`** (نص عشوائي طويل) — مطلوب وإلا يرفض الخادم أي رفع. تطلبه الواجهة من الإدارة عند أول رفع.  
+3. سيُضاف تلقائيًا: `BLOB_READ_WRITE_TOKEN`  
 4. أو: Settings → Environment Variables → أضف `BLOB_READ_WRITE_TOKEN`  
 5. أعد النشر: `vercel --prod` أو Push جديد
 
@@ -69,7 +68,7 @@ const newBlob = await upload(file.name, file, {
 - رفع **لوائح الشركة**
 - رفع **صور المناصب** في الهيكل التنظيمي
 
-إن لم يكن التوكن/المفتاح جاهزًا، يُحفظ الملف مؤقتًا محليًا (Base64) حتى تفعيل السحابة.
+إن لم يكن التوكن جاهزًا، يُحفظ الملف مؤقتًا محليًا (Base64) حتى تفعيل السحابة.
 
 ---
 
@@ -81,9 +80,6 @@ const newBlob = await upload(file.name, file, {
 ├── sw.js
 ├── manifest.json
 ├── header-logos.png
-├── icon-192.png
-├── icon-512.png
-├── lib/ (html2pdf + blob-client — محلية)
 ├── package.json
 ├── vercel.json
 ├── .gitignore

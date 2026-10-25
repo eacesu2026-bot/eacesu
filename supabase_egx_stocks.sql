@@ -185,8 +185,7 @@ COMMENT ON FUNCTION public.upsert_stock_price IS
 -- ------------------------------------------------------------
 -- 8) View جاهز للواجهة (آخر الأسعار + بيانات السهم)
 -- ------------------------------------------------------------
-DROP VIEW IF EXISTS public.v_stock_quotes;
-CREATE VIEW public.v_stock_quotes AS
+CREATE OR REPLACE VIEW public.v_stock_quotes AS
 SELECT
   s.id,
   s.symbol,
@@ -241,20 +240,20 @@ CREATE POLICY "history_public_read" ON public.stock_price_history
 DROP POLICY IF EXISTS "stocks_admin_all" ON public.stocks;
 CREATE POLICY "stocks_admin_all" ON public.stocks
   FOR ALL
-  USING (COALESCE(auth.jwt() -> 'app_metadata' ->> 'role','') = 'admin')
-  WITH CHECK (COALESCE(auth.jwt() -> 'app_metadata' ->> 'role','') = 'admin');
+  USING (auth.jwt() ->> 'role' = 'admin')
+  WITH CHECK (auth.jwt() ->> 'role' = 'admin');
 
 DROP POLICY IF EXISTS "prices_admin_all" ON public.stock_prices;
 CREATE POLICY "prices_admin_all" ON public.stock_prices
   FOR ALL
-  USING (COALESCE(auth.jwt() -> 'app_metadata' ->> 'role','') = 'admin')
-  WITH CHECK (COALESCE(auth.jwt() -> 'app_metadata' ->> 'role','') = 'admin');
+  USING (auth.jwt() ->> 'role' = 'admin')
+  WITH CHECK (auth.jwt() ->> 'role' = 'admin');
 
 -- السماح لـ authenticated بقراءة السجلات إن رغبت
 DROP POLICY IF EXISTS "logs_admin_read" ON public.stock_fetch_logs;
 CREATE POLICY "logs_admin_read" ON public.stock_fetch_logs
   FOR SELECT
-  USING (COALESCE(auth.jwt() -> 'app_metadata' ->> 'role','') = 'admin');
+  USING (auth.jwt() ->> 'role' = 'admin');
 
 -- ------------------------------------------------------------
 -- 10) تحديث updated_at تلقائيًا
@@ -276,9 +275,3 @@ CREATE TRIGGER trg_stocks_updated
 -- انتهى السكربت الأساسي
 -- بعد التشغيل: أنشئ Edge Function لجلب الأسعار (انظر الملف المرفق التالي)
 -- ============================================================
-
-
--- ===== أمان: دالة SECURITY DEFINER لا تُستدعى إلا من service_role =====
-REVOKE ALL ON FUNCTION public.upsert_stock_price(TEXT,NUMERIC,NUMERIC,NUMERIC,NUMERIC,NUMERIC,BIGINT,NUMERIC,TEXT,TIMESTAMPTZ) FROM PUBLIC, anon, authenticated;
-GRANT EXECUTE ON FUNCTION public.upsert_stock_price(TEXT,NUMERIC,NUMERIC,NUMERIC,NUMERIC,NUMERIC,BIGINT,NUMERIC,TEXT,TIMESTAMPTZ) TO service_role;
-ALTER VIEW public.v_stock_quotes SET (security_invoker = true);

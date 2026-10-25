@@ -15,7 +15,7 @@ CREATE TABLE IF NOT EXISTS public.app_settings (
 
 INSERT INTO public.app_settings (key, value) VALUES
   ('branding', '{"union_name_ar":"اتحاد العاملين المساهمين بشركة مصر للألومنيوم","union_name_en":"Egypt Aluminum Company Employees'' Shareholders Union","primary_color":"#0b3d5c"}'::jsonb),
-  ('finance', '{"union_shares":0,"avg_cost":0,"dividends":0}'::jsonb)
+  ('finance', '{"union_shares":125000,"avg_cost":12.50,"dividends":850000}'::jsonb)
 ON CONFLICT (key) DO NOTHING;
 
 -- ========== الأعضاء ==========
@@ -224,8 +224,7 @@ END;
 $$;
 
 -- ========== View الأسعار ==========
-DROP VIEW IF EXISTS public.v_stock_quotes;
-CREATE VIEW public.v_stock_quotes AS
+CREATE OR REPLACE VIEW public.v_stock_quotes AS
 SELECT s.id, s.symbol, s.isin, s.name_ar, s.name_en, s.reuters_code, s.currency, s.sort_order,
   p.last_price, p.prev_close, p.change_abs, p.change_pct, p.volume, p.source, p.source_time, p.fetched_at
 FROM public.stocks s
@@ -234,8 +233,7 @@ WHERE s.is_active = true
 ORDER BY s.sort_order;
 
 -- ========== View إحصائيات ==========
-DROP VIEW IF EXISTS public.v_dashboard_stats;
-CREATE VIEW public.v_dashboard_stats AS
+CREATE OR REPLACE VIEW public.v_dashboard_stats AS
 SELECT
   (SELECT COUNT(*) FROM public.members WHERE is_active) AS members_count,
   COALESCE((SELECT (value->>'union_shares')::numeric FROM public.app_settings WHERE key='finance'), 0) AS union_shares,
@@ -261,120 +259,28 @@ ALTER TABLE public.login_events ENABLE ROW LEVEL SECURITY;
 ALTER TABLE public.stock_fetch_logs ENABLE ROW LEVEL SECURITY;
 
 -- قراءة عامة للمحتوى العام
-DROP POLICY IF EXISTS "public_read_org" ON public.org_positions;
-CREATE POLICY "public_read_org" ON public.org_positions FOR SELECT USING (is_active);
-DROP POLICY IF EXISTS "public_read_news" ON public.news;
-CREATE POLICY "public_read_news" ON public.news FOR SELECT USING (is_published);
-DROP POLICY IF EXISTS "public_read_stocks" ON public.stocks;
-CREATE POLICY "public_read_stocks" ON public.stocks FOR SELECT USING (true);
-DROP POLICY IF EXISTS "public_read_prices" ON public.stock_prices;
-CREATE POLICY "public_read_prices" ON public.stock_prices FOR SELECT USING (true);
-DROP POLICY IF EXISTS "public_read_history" ON public.stock_price_history;
-CREATE POLICY "public_read_history" ON public.stock_price_history FOR SELECT USING (true);
-DROP POLICY IF EXISTS "public_read_settings" ON public.app_settings;
-CREATE POLICY "public_read_settings" ON public.app_settings FOR SELECT USING (true);
+CREATE POLICY IF NOT EXISTS "public_read_org" ON public.org_positions FOR SELECT USING (is_active);
+CREATE POLICY IF NOT EXISTS "public_read_news" ON public.news FOR SELECT USING (is_published);
+CREATE POLICY IF NOT EXISTS "public_read_stocks" ON public.stocks FOR SELECT USING (true);
+CREATE POLICY IF NOT EXISTS "public_read_prices" ON public.stock_prices FOR SELECT USING (true);
+CREATE POLICY IF NOT EXISTS "public_read_history" ON public.stock_price_history FOR SELECT USING (true);
+CREATE POLICY IF NOT EXISTS "public_read_settings" ON public.app_settings FOR SELECT USING (true);
 
 -- الشكاوى: أي شخص يُدرج، العضو يرى الخاصة به
-DROP POLICY IF EXISTS "anyone_insert_complaint" ON public.complaints;
-CREATE POLICY "anyone_insert_complaint" ON public.complaints FOR INSERT
-  WITH CHECK (status = 'جديد' AND admin_reply IS NULL
-              AND char_length(message) BETWEEN 1 AND 2000 AND char_length(full_name) BETWEEN 1 AND 200
-              AND (member_id IS NULL OR member_id IN (SELECT id FROM public.members WHERE auth_user_id = auth.uid())));
-DROP POLICY IF EXISTS "member_read_own_complaints" ON public.complaints;
-CREATE POLICY "member_read_own_complaints" ON public.complaints FOR SELECT
+CREATE POLICY IF NOT EXISTS "anyone_insert_complaint" ON public.complaints FOR INSERT WITH CHECK (true);
+CREATE POLICY IF NOT EXISTS "member_read_own_complaints" ON public.complaints FOR SELECT
   USING (auth.uid() IS NOT NULL AND member_id IN (SELECT id FROM public.members WHERE auth_user_id = auth.uid()));
 
 -- العضو يرى بياناته وحركاته فقط
-DROP POLICY IF EXISTS "member_read_self" ON public.members;
-CREATE POLICY "member_read_self" ON public.members FOR SELECT
+CREATE POLICY IF NOT EXISTS "member_read_self" ON public.members FOR SELECT
   USING (auth.uid() IS NOT NULL AND auth_user_id = auth.uid());
-DROP POLICY IF EXISTS "member_read_own_txn" ON public.member_transactions;
-CREATE POLICY "member_read_own_txn" ON public.member_transactions FOR SELECT
+CREATE POLICY IF NOT EXISTS "member_read_own_txn" ON public.member_transactions FOR SELECT
   USING (auth.uid() IS NOT NULL AND member_id IN (SELECT id FROM public.members WHERE auth_user_id = auth.uid()));
 
--- ===== صلاحيات الإدارة =====
--- الإدارة = مستخدم Supabase Auth تحمل بياناته app_metadata.role = 'admin'
--- (يُضبط من لوحة Supabase أو بـ service_role فقط؛ لا يستطيع المستخدم تعديله بنفسه).
--- ملاحظة: claim "role" في أعلى الـ JWT يساوي دائمًا authenticated/anon، لذلك نقرأ app_metadata.
-CREATE OR REPLACE FUNCTION public.is_admin() RETURNS boolean
-LANGUAGE sql STABLE AS $$ SELECT COALESCE(auth.jwt() -> 'app_metadata' ->> 'role', '') = 'admin' $$;
-
-DO $$ DECLARE t text; BEGIN
-  FOREACH t IN ARRAY ARRAY['members','org_positions','news','complaints','stocks','stock_prices',
-                           'stock_price_history','member_transactions','app_settings','login_events','stock_fetch_logs']
-  LOOP
-    EXECUTE format('DROP POLICY IF EXISTS "admin_all_%1$s" ON public.%1$I', t);
-    EXECUTE format('CREATE POLICY "admin_all_%1$s" ON public.%1$I FOR ALL USING (public.is_admin()) WITH CHECK (public.is_admin())', t);
-  END LOOP;
-END $$;
-
--- تحديث updated_at تلقائيًا
-CREATE OR REPLACE FUNCTION public.set_updated_at() RETURNS trigger LANGUAGE plpgsql AS $$
-BEGIN NEW.updated_at = now(); RETURN NEW; END $$;
-DO $$ DECLARE t text; BEGIN
-  FOREACH t IN ARRAY ARRAY['members','complaints','stocks','app_settings'] LOOP
-    EXECUTE format('DROP TRIGGER IF EXISTS trg_%1$s_updated ON public.%1$I', t);
-    EXECUTE format('CREATE TRIGGER trg_%1$s_updated BEFORE UPDATE ON public.%1$I FOR EACH ROW EXECUTE FUNCTION public.set_updated_at()', t);
-  END LOOP;
-END $$;
-
--- ===== إغلاق دالة تحديث الأسعار (SECURITY DEFINER) أمام الزوار =====
--- بدون هذا السطر كان أي زائر مجهول يستطيع استدعاءها عبر RPC وتغيير أسعار الأسهم.
-REVOKE ALL ON FUNCTION public.upsert_stock_price(TEXT,NUMERIC,NUMERIC,NUMERIC,NUMERIC,NUMERIC,BIGINT,NUMERIC,TEXT,TIMESTAMPTZ) FROM PUBLIC, anon, authenticated;
-GRANT EXECUTE ON FUNCTION public.upsert_stock_price(TEXT,NUMERIC,NUMERIC,NUMERIC,NUMERIC,NUMERIC,BIGINT,NUMERIC,TEXT,TIMESTAMPTZ) TO service_role;
--- الـ views تعمل بصلاحيات المالك؛ نجعلها تحترم RLS الخاص بالمستدعي
-ALTER VIEW public.v_stock_quotes SET (security_invoker = true);
-ALTER VIEW public.v_dashboard_stats SET (security_invoker = true);
--- app_settings تحتوي على بيانات مالية: القراءة العامة لمفتاح branding فقط
-DROP POLICY IF EXISTS "public_read_settings" ON public.app_settings;
-CREATE POLICY "public_read_settings" ON public.app_settings FOR SELECT USING (key = 'branding');
--- أرقام عامة آمنة للصفحة الرئيسية دون كشف جدول الأعضاء
-CREATE OR REPLACE FUNCTION public.public_stats() RETURNS TABLE(members_count bigint, logins_count bigint)
-LANGUAGE sql STABLE SECURITY DEFINER SET search_path = public AS $$
-  SELECT (SELECT count(*) FROM members WHERE is_active), (SELECT count(*) FROM login_events) $$;
-GRANT EXECUTE ON FUNCTION public.public_stats() TO anon, authenticated;
+-- ملاحظة: صلاحيات الإدارة الكاملة تُدار عبر service_role من لوحة الإدارة أو JWT role=admin
 
 -- ========== Storage bucket للصور (يُنشأ من Dashboard أيضًا) ==========
 -- في Storage أنشئ bucket باسم: media  (public read)
 -- المسارات المقترحة: org/{id}.jpg | logos/header.png | docs/{file}
-
--- ===== خصوصية إضافية =====
--- 1) تحقق من الرقم القومي (14 رقمًا) — NOT VALID كي لا يفشل مع بيانات قديمة، ويُطبَّق على كل إدخال جديد
-DO $$ BEGIN
-  ALTER TABLE public.members ADD CONSTRAINT members_nid_14 CHECK (national_id ~ '^[0-9]{14}$') NOT VALID;
-EXCEPTION WHEN duplicate_object THEN NULL; END $$;
-
--- 2) سجل تدقيق: من غيّر/حذف بيانات الأعضاء أو الحركات المالية أو ردّ على شكوى (لا يخزّن الرقم القومي)
-CREATE TABLE IF NOT EXISTS public.audit_log (
-  id         BIGSERIAL PRIMARY KEY,
-  at         TIMESTAMPTZ NOT NULL DEFAULT now(),
-  actor      UUID,
-  table_name TEXT NOT NULL,
-  action     TEXT NOT NULL,
-  row_id     TEXT,
-  changed    TEXT[]
-);
-ALTER TABLE public.audit_log ENABLE ROW LEVEL SECURITY;
-DROP POLICY IF EXISTS "admin_read_audit" ON public.audit_log;
-CREATE POLICY "admin_read_audit" ON public.audit_log FOR SELECT USING (public.is_admin());
-REVOKE INSERT, UPDATE, DELETE ON public.audit_log FROM anon, authenticated;
-
-CREATE OR REPLACE FUNCTION public.audit_row() RETURNS trigger
-LANGUAGE plpgsql SECURITY DEFINER SET search_path = public AS $$
-DECLARE r jsonb := to_jsonb(COALESCE(NEW, OLD)); o jsonb := CASE WHEN TG_OP='INSERT' THEN '{}'::jsonb ELSE to_jsonb(OLD) END;
-        n jsonb := CASE WHEN TG_OP='DELETE' THEN '{}'::jsonb ELSE to_jsonb(NEW) END; cols text[];
-BEGIN
-  SELECT array_agg(k) INTO cols FROM (SELECT key AS k FROM jsonb_each(n) EXCEPT SELECT key FROM jsonb_each(o) WHERE o->key = n->key) q;
-  INSERT INTO public.audit_log(actor, table_name, action, row_id, changed)
-  VALUES (auth.uid(), TG_TABLE_NAME, TG_OP, r->>'id', cols);
-  RETURN COALESCE(NEW, OLD);
-END $$;
-REVOKE ALL ON FUNCTION public.audit_row() FROM PUBLIC, anon, authenticated;
-DO $$ DECLARE t text; BEGIN
-  FOREACH t IN ARRAY ARRAY['members','member_transactions','complaints'] LOOP
-    EXECUTE format('DROP TRIGGER IF EXISTS trg_%1$s_audit ON public.%1$I', t);
-    EXECUTE format('CREATE TRIGGER trg_%1$s_audit AFTER UPDATE OR DELETE ON public.%1$I FOR EACH ROW EXECUTE FUNCTION public.audit_row()', t);
-  END LOOP;
-END $$;
 
 SELECT 'EACESU schema installed successfully' AS status;

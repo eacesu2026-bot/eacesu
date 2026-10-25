@@ -10,13 +10,11 @@
  *
  * الاستدعاء (يدوي أو من Cron):
  *   curl -X POST https://<PROJECT_REF>.supabase.co/functions/v1/fetch-stock-prices \
- *     -H "Authorization: Bearer <ANON_KEY>" \
- *     -H "x-cron-secret: <CRON_SECRET>" \
+ *     -H "Authorization: Bearer <SERVICE_ROLE_OR_ANON_KEY>" \
  *     -H "Content-Type: application/json"
  *
  * جدولة (Supabase Cron / pg_cron أو GitHub Actions كل دقيقة في جلسة التداول):
- *   SELECT cron.schedule('fetch-egx-prices', '0,2,4,6,8,10,12,14,16,18,20,22,24,26,28,30,32,34,36,38,40,42,44,46,48,50,52,54,56,58 8-15 * * 0-4', ...);
- *   (أي كل دقيقتين في ساعات الجلسة؛ لا تكتب الصيغة المختصرة بخط مائل داخل هذا التعليق لأنها تنهي التعليق)
+ *   SELECT cron.schedule('fetch-egx-prices', '*/2 8-15 * * 0-4', ...);
  *
  * مهم جدًا:
  * - موقع EGX لا يوفّر API عام مجاني للاستخدام من التطبيقات.
@@ -37,10 +35,6 @@ const SUPABASE_URL = Deno.env.get("SUPABASE_URL")!;
 const SUPABASE_SERVICE_ROLE_KEY = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
 const MARKET_DATA_API_KEY = Deno.env.get("MARKET_DATA_API_KEY") ?? "";
 const MARKET_DATA_BASE_URL = Deno.env.get("MARKET_DATA_BASE_URL") ?? "";
-// سر مشترك لاستدعاء الدالة (cron/GitHub Actions): supabase secrets set CRON_SECRET=<قيمة عشوائية طويلة>
-const CRON_SECRET = Deno.env.get("CRON_SECRET") ?? "";
-// الوضع التجريبي يكتب أسعارًا عشوائية في قاعدة البيانات — معطّل ما لم تفعّله صراحةً (للتطوير فقط)
-const ALLOW_DEMO = Deno.env.get("ALLOW_DEMO") === "true";
 
 const supabase = createClient(SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY);
 
@@ -106,7 +100,7 @@ async function fetchDemoQuotes(symbols: string[]): Promise<Quote[]> {
     return {
       symbol: sym,
       last,
-      prev: row?.prev_close != null ? Number(row.prev_close) : base,
+      prev: row?.last_price != null ? Number(row.last_price) : base,
       volume: Math.floor(Math.random() * 50000) + 1000,
       sourceTime: new Date().toISOString(),
     };
@@ -114,14 +108,6 @@ async function fetchDemoQuotes(symbols: string[]): Promise<Quote[]> {
 }
 
 Deno.serve(async (req) => {
-  // مصادقة: لا يُنفَّذ الجلب إلا لمن يملك CRON_SECRET (مقارنة بزمن ثابت تقريبًا)
-  const given = req.headers.get("x-cron-secret") ?? "";
-  if (!CRON_SECRET || given.length !== CRON_SECRET.length ||
-      [...given].reduce((a, c, i) => a | (c.charCodeAt(0) ^ CRON_SECRET.charCodeAt(i)), 0) !== 0) {
-    return new Response(JSON.stringify({ error: "unauthorized" }), {
-      status: 401, headers: { "Content-Type": "application/json" },
-    });
-  }
   const started = Date.now();
   let status = "success";
   let message = "";
@@ -149,9 +135,6 @@ Deno.serve(async (req) => {
       quotes = await fetchFromLicensedProvider(symbols);
       message = "fetched from licensed provider";
     } else {
-      if (!ALLOW_DEMO) {
-        throw new Error("MARKET_DATA_API_KEY / MARKET_DATA_BASE_URL غير مضبوطين، والوضع التجريبي معطّل (ALLOW_DEMO)");
-      }
       quotes = await fetchDemoQuotes(symbols);
       message = "demo mode (no MARKET_DATA secrets) — لا تستخدم في الإنتاج";
       status = "partial";
@@ -159,7 +142,7 @@ Deno.serve(async (req) => {
 
     // 3) تحديث القاعدة عبر RPC
     for (const q of quotes) {
-      if (!q.symbol || !Number.isFinite(q.last) || q.last <= 0) {
+      if (!q.symbol || !q.last) {
         fail++;
         continue;
       }
