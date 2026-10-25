@@ -200,4 +200,4 @@ revoke all on function public.appcloud_call(text,text,jsonb,text) from public;
 grant execute on function public.appcloud_call(text,text,jsonb,text) to anon, authenticated;
 
 -- ===== مفتاح الإدارة (غيّره إلى قيمتك السرّية الطويلة ثم شغّل هذا السطر) =====
--- select public.appcloud_set_key('اكتب-هنا-مفتاحًا-طويلًا-صعب-التخمين');
+-- select public.appcloud_set_key('Prof01554061989');
